@@ -2,10 +2,11 @@
 
 ATITD Citrus Genetics: statistical model validation and breeding analytics platform.
 
-**Version:** 8.3
+**Version:** 8.4
 **Date:** 2026-10-09
 
 **Changelog:**
+- v8.4: Address adversarial review round 11 CONDITIONAL PASS (0 MAJOR, 15 MINOR). Optimizer release gate clarified (gap <= 1.0 or escalated). R-01 scoped to upstream single-start compatibility. Multi-start-5 defined as canonical + 4 seeded starts. Schema layer moved beside Compute in architecture diagram. Clone modes "supported" not "used." color_floor formula defined. V=11/V=3 counts labeled as upper bounds. Per-model optimizer_diagnostics added to validation_summary.json. Removed stale ruff.toml from package tree. CI YAML labeled as schematic pseudocode. Dependency matrix renamed "Key" with completeness note. Reverse proxy port description deployment-neutral. K8s pod restart documented after publishing. Crash recovery .tmp cleanup is manual only. SHA-256 "verified" changed to "fingerprinted for provenance."
 - v8.3: Address adversarial review round 10 FAIL (2 MAJOR, 13 MINOR). MAJOR: optimizer escalation is now a preflight step before production comparison (Section 9.4 step 5); hostPath Directory failure behavior corrected (pod fails to start, not degraded). MINOR: import-linter prose no longer overstates enforcement scope; R-08 metric corrected to "total coverage (branch enabled)"; convergence 0.01 flag renamed to material residual-improvement warning (distinct from 1e-6 convergence); R-03a no longer described as the ranking criterion definer; degraded-mode 503 now lists all 7 data endpoints; ESLint lint-web uses --max-warnings 0; nginx gzip clarified (gzip_static for precompressed assets, gzip on for API proxy); namespace wording changed to "scoping"; scripts/ exclusion says "analytics runtime surface" not "library"; CI section labeled "Target Architecture" with phase references; add-model procedure requires upstream variants() update; add-dataset notes R-01/R-02 are dataset-specific fixtures; Pydantic clone_share uses Field(ge=0,le=1), fitted_at uses datetime.
 - v8.2: Address adversarial review round 9 CONDITIONAL PASS (0 MAJOR, 4 MINOR). Fixed stale check_loc.py self-certification prose (now references test_check_loc.py). R-11 now states generated TS types exception explicitly. Architecture diagrams made deployment-neutral (loopback, not 127.0.0.1:80). K8s kind setup: documented extraMounts requirement. ESLint generated types: scoped override (not full ignores) for LOC rules only.
 - v8.1: Address adversarial review round 8 (2 MAJOR, 7 MINOR). K8s: replaced Ingress with kubectl port-forward for localhost-only access; added hostPath volume contract for results. R-08 wording clarified to reference coverage-eligible subset. LOC description corrected to physical source span (not code-only). Added test_check_loc.py for R-11 enforcement verification. Generated TS types (web/src/types/) exempted from LOC rules. Per-file-ignores prose corrected to match actual TOML (D101, D102, D103, D107 not D101-D107). "First gate" language scoped to lint-python. Implementation roadmap reconciled with actual Phase 1 deliverables.
@@ -57,7 +58,7 @@ ATITD Citrus Genetics is a full-stack analytics platform for validating and expl
 
 | ID | Requirement | Threshold | Verification |
 |----|-------------|-----------|--------------|
-| R-01 | Model fitting correctness | Fitted CLAIM model reproduces published log-score within 0.05 of -5462.5 on the 692-child dataset (deterministic algorithm, tight tolerance) | Fast CI: `test_claim_fit_ll` (frozen single-litter fixture). Release: full 692-child fit. |
+| R-01 | Model fitting correctness | Fitted CLAIM model reproduces published log-score within 0.05 of -5462.5 on the 692-child dataset using canonical single-start initialization (upstream compatibility mode, independent of production optimization mode) | Fast CI: `test_claim_fit_ll` (frozen single-litter fixture). Release: full 692-child single-start fit. |
 | R-02 | Observable-signature recovery | >= 65% per-litter observable-signature recovery on synthetic CLAIM data; 50 seeds; 10,000 bootstrap resamples; lower bound of percentile 95% CI >= 0.65 (Section 4.9) | Release validation: `test_gene_recovery_ci` |
 | R-03 | Model comparison pipeline | All 30 models fit/scored under the specified CV procedure and ranked deterministically | Fast CI: `test_pipeline_produces_30_rows` |
 | R-03a | Legacy regression fixture | On frozen historical data + code, CLAIM ranks #1 in cv_ll. This is a regression check, not a correctness axiom — if a legitimate code change moves CLAIM out of #1, the fixture is updated, not the code reverted. | Release validation: `test_legacy_ranking` |
@@ -101,7 +102,7 @@ ATITD Citrus Genetics is a full-stack analytics platform for validating and expl
 
 ### 2.5 Reverse Proxy: nginx
 
-**Rationale:** Static file serving for the React build, reverse proxy to FastAPI. Localhost-only ingress on port 80. No TLS — this is not an internet-facing deployment. Precompressed `.gz` assets are generated by the Vite build plugin (`vite-plugin-compression`) and served by nginx's `gzip_static` directive. Dynamic `gzip on` is added for API proxy responses.
+**Rationale:** Static file serving for the React build, reverse proxy to FastAPI. nginx listens on container port 80; host exposure is loopback-only (Compose: 127.0.0.1:80, K8s: port-forward 127.0.0.1:8080). No TLS — this is not an internet-facing deployment. Precompressed `.gz` assets are generated by the Vite build plugin (`vite-plugin-compression`) and served by nginx's `gzip_static` directive. Dynamic `gzip on` is added for API proxy responses.
 
 ### 2.6 Containerization: Docker + Docker Compose + Kubernetes
 
@@ -123,7 +124,7 @@ ATITD Citrus Genetics is a full-stack analytics platform for validating and expl
 ```mermaid
 flowchart TD
     RAW["Raw Excel/Source Data"] --> B["Data Ingestion<br/>extract module: Excel -> CSV<br/>validates schema, asserts 14 litters"]
-    B --> A["data/children.csv<br/>(canonical input, SHA-256 verified)"]
+    B --> A["data/children.csv<br/>(canonical input, SHA-256 fingerprinted)"]
     A --> C["CLI / Orchestration<br/>citrus_genetics.cli.run_all<br/>loads data, runs pipelines,<br/>writes results, publishes atomically"]
     C --> D["Pipelines (pure compute)<br/>compare, sim_checks, length_check"]
     C --> E["IO / Adapters<br/>results serialization,<br/>provenance, run manifest"]
@@ -150,12 +151,12 @@ block-beta
         A["API Layer<br/>FastAPI: serves published results<br/>OpenAPI schema = normative contract"]
         C["CLI / Orchestration<br/>citrus_genetics.cli: pipeline execution,<br/>IO coordination, atomic publication"]
     end
-    block:IOSchemas["IO + Schemas"]
+    block:IO_Layer["IO Layer"]
         IO["IO / Adapters<br/>citrus_genetics.io: file read/write,<br/>provenance. Depends inward only."]
-        S["Schemas<br/>citrus_genetics.schemas:<br/>Pydantic models, pure data"]
     end
-    block:Compute
+    block:ComputeSchemas["Compute + Schemas (shared data contracts)"]
         PL["Pipelines<br/>compare, sim_checks, length_check<br/>Pure computation, no IO"]
+        S["Schemas<br/>citrus_genetics.schemas:<br/>Pydantic models, pure data"]
     end
     block:Core
         CO["Core<br/>model.py, constants.py<br/>Pure numerical code"]
@@ -166,9 +167,11 @@ block-beta
     A --> S
     C --> IO
     C --> PL
+    IO --> S
     IO --> CO
-    S --> CO
+    PL --> S
     PL --> CO
+    S --> CO
 ```
 
 **Dependency direction:** Each layer may depend only on layers below it. Core has zero dependencies on any other layer. Pipelines are pure computation (no filesystem IO). API and CLI are sibling outer adapters at the same architectural level — neither may import the other (Section 7.5). CLI orchestrates pipelines + IO for producing results. API reads published results via IO/schemas for serving. Schemas are a shared lower-level layer consumed by both pipelines and IO — they sit at the IO/Schemas level, not above Compute. Import-linter enforces the critical boundaries via 6 forbidden-import contracts (Section 7.5): core purity, pipeline isolation from API/IO/CLI, schema isolation from API/IO/CLI, IO isolation from API/CLI, and the API/CLI sibling boundary. The "no filesystem IO in pipelines" constraint is enforced by code review, not import-linter.
@@ -256,7 +259,7 @@ atitd-citrus-genetics/
         Dockerfile.web               # Multi-stage: node build -> nginx:alpine (wget for healthcheck)
         nginx.conf
     data/
-        children.csv                 # Canonical analytics input (SHA-256 verified)
+        children.csv                 # Canonical analytics input (SHA-256 fingerprinted for provenance)
     results/
         runs/
             <run_id>/                # Atomic: entire directory renamed in one operation
@@ -268,8 +271,7 @@ atitd-citrus-genetics/
                 ppc_distributions.parquet
                 validation_summary.json  # R-01/R-02/R-03a, optimizer diagnostics, bootstrap CI
         current -> runs/<latest_run_id>   # Symlink updated atomically after directory rename
-    pyproject.toml
-    ruff.toml
+    pyproject.toml               # All ruff, mypy, pytest, coverage config lives here
     Makefile
     docker-compose.yml
     k8s/
@@ -291,7 +293,7 @@ Each citrus tree carries **8 genes** (2 per trait), integer values in {0, 1, ...
 
 | Trait | Rule | Formula |
 |-------|------|---------|
-| Color | mean | floor((g1 + g2 + 1) / 2) (round half-up) |
+| Color | mean | floor((g1 + g2 + 1) / 2) (round half-up); variant rround=floor uses floor((g1 + g2) / 2) |
 | Sweet | min | min(g1, g2) |
 | Size | max | max(g1, g2) |
 | Length | g1 | g1 only; g2 is never displayed |
@@ -349,7 +351,7 @@ L_indep(child) = prod_{t=0}^{3} P_t[child_v_t]
 
 ### 4.4 Clone Families
 
-Two clone modes are used:
+Two clone modes are supported (the current 30-model manifest uses only exact cloning and clone=False):
 
 **Clone mode: exact (clone=True)**
 
@@ -520,9 +522,9 @@ where "equivalent" means the fitted (GA, GB, c) matches the planted (GA*, GB*, c
 
 Coordinate ascent is not globally optimal. To ensure model comparison is not confounded by differential optimization quality:
 
-1. **Per-trait exhaustive benchmark (V=11):** For each trait independently, fix the other 3 traits' genes at their fitted values and exhaustively enumerate all gene pairs for the target trait at V=11 (121 candidate pairs for parent A x 121 candidate pairs for parent B = 14,641 joint assignments per trait). Verify coordinate ascent matches the per-trait global optimum. This is tractable (4 traits x ~15K evaluations) and validates the core scanning logic.
+1. **Per-trait exhaustive benchmark (V=11):** For each trait independently, fix the other 3 traits' genes at their fitted values and exhaustively enumerate all gene pairs for the target trait at V=11 (at most 121 candidate pairs per parent = 14,641 raw joint assignments per trait before display constraints reduce the feasible set). Verify coordinate ascent matches the per-trait global optimum. This is tractable (4 traits x up to ~15K evaluations) and validates the core scanning logic.
 
-2. **Full-litter exhaustive benchmark (V=3):** On a tiny gene space (V=3, genes in {0, 1, 2}), construct a synthetic 2-trait litter. Each trait has 2 genes per parent x 2 parents = 4 gene coordinates per trait, giving 8 gene coordinates total for 2 traits. Exhaustive enumeration: 3^8 = 6,561 total genotype assignments. (For one_g1, which has 1 gene per trait, the space is 3^4 = 81.) Exhaustively evaluate all assignments and verify coordinate ascent finds the global optimum. This validates joint optimization across traits.
+2. **Full-litter exhaustive benchmark (V=3):** On a tiny gene space (V=3, genes in {0, 1, 2}), construct a synthetic 2-trait litter. Each trait has 2 genes per parent x 2 parents = 4 gene coordinates per trait, giving 8 gene coordinates total for 2 traits. Raw enumeration upper bound: 3^8 = 6,561 genotype assignments (3^4 = 81 for one_g1); display constraints reduce the feasible set. Exhaustively evaluate all feasible assignments and verify coordinate ascent finds the global optimum. This validates joint optimization across traits.
 
    **Reduced-model mutation semantics:** When reducing from 4 traits to 2, mutation-family probabilities are renormalized to the reduced model:
    - one8 becomes "one of 4 genes" (2 traits x 2 slots), each with probability 1/4
@@ -531,7 +533,7 @@ Coordinate ascent is not globally optimal. To ensure model comparison is not con
 
    Enumeration is over the same feasible candidate space used by production fitting: for each (rule, displayed_value) pair, only gene pairs satisfying display(g1, g2) == displayed_value are considered. For clone-enabled models, every enumerated genotype assignment is maximized over the full production c grid (121 points) before comparing objective values. For clone=False models, c is fixed at 0.
 
-3. **Multi-start validation:** For representative models from each objective-function family — one8 (CLAIM), indep (p=0.14), one_g1 — run coordinate ascent from 5 deterministic initializations per litter (see seed contract below) and compare best-of-5 vs single-start on the full V=1001 dataset.
+3. **Multi-start validation:** For representative models from each objective-function family — one8 (CLAIM), indep (p=0.14), one_g1 — run coordinate ascent from 5 starts per litter: the canonical upstream initialization plus 4 seeded alternatives (see seed contract below). Compare best-of-5 vs the canonical single-start result on the full V=1001 dataset. The canonical start is always included so escalation cannot discard a known-good solution.
 
 4. **Escalation rule (preflight):** Multi-start validation runs as a preflight step (Section 9.4 step 5) before the production 30-model comparison. If the best-of-5 exceeds single-start by more than 1.0 log-score units on any litter:
    - The entire run uses best-of-5 for **all** models (not just the flagged one) to maintain comparable optimization budgets.
@@ -790,6 +792,8 @@ This binds exclusively to `127.0.0.1`, enforcing the same security boundary as D
 **Local cluster setup:** Images use `imagePullPolicy: Never` for pre-built local images (e.g., `minikube image load`, `kind load docker-image`). The hostPath volume (path: `/host-results`) requires the results directory to exist on the cluster node's filesystem:
 - **minikube:** `minikube mount ./results:/host-results`
 - **kind:** Requires `extraMounts` in the kind cluster config to map the host's `./results` directory to `/host-results` inside the kind node container. Without this, `/host-results` does not exist on the node and the `hostPath` volume mount (type: `Directory`) fails — the API pod will not start until the mount is configured.
+
+**Publishing a new run (K8s):** After `make run-all` updates the `results/current` symlink on the host, the API pod must be restarted to load the new run (the API has no hot-reload — Section 5.3): `kubectl rollout restart deployment/api -n citrus-genetics`.
 
 ## 7. Code Quality Standards
 
@@ -1105,7 +1109,10 @@ Python and web quality gates are independently runnable. The aggregate `make qua
 
 ### 8.2 CI/CD (GitHub Actions — Target Architecture)
 
+The following is schematic pseudocode showing the target job structure. Each job requires `runs-on: ubuntu-latest` and appropriate workflow triggers (`on: push/pull_request` for per-commit, `on: workflow_dispatch` for release). See Section 15 for implementation phasing.
+
 ```yaml
+# Schematic — not a complete workflow file
 quality-gates:
   jobs:
     python-quality:
@@ -1218,6 +1225,13 @@ results/
     "v3_full_litter_match": true,
     "multi_start_max_gap": 0.0,
     "convergence_flags": [],
+    "optimizer_diagnostics": {
+        "claim": {
+            "Hive1": {"rounds": 5, "final_improvement": 1e-8, "converged": true, "material_residual_warning": false},
+            "...": "..."
+        },
+        "...": "..."
+    },
     "generated_at": "ISO 8601"
 }
 ```
@@ -1282,7 +1296,7 @@ Only `run_all.py` publishes to `results/current`. It is the single authoritative
 
 `run_compare.py` and `run_simchecks.py` are development-only commands: they execute their respective pipelines and write results to stdout or a user-specified temp directory. They never modify `results/current` or create run directories under `results/runs/`.
 
-**Crash recovery:** A crash before the temporary-directory rename (step 11) leaves a `.tmp-*` directory that the API ignores; cleanup is manual or by the next successful run. A crash after the run-directory rename but before the current-pointer replacement (between steps 11-12) leaves a valid run directory but a stale `current` symlink — the API reads the symlink target and validates it; the new run can be adopted by re-running the symlink update. A stale `current.new` symlink from a prior crash is removed at step 12 before creating the new one.
+**Crash recovery:** A crash before the temporary-directory rename (step 11) leaves a `.tmp-*` directory that the API ignores; cleanup is manual (the run procedure does not automatically remove stale `.tmp-*` directories from prior crashes). A crash after the run-directory rename but before the current-pointer replacement (between steps 11-12) leaves a valid run directory but a stale `current` symlink — the API reads the symlink target and validates it; the new run can be adopted by re-running the symlink update. A stale `current.new` symlink from a prior crash is removed at step 12 before creating the new one.
 
 **API startup validation:** The API reads `results/current`, loads the manifest, and verifies every artifact hash matches (including `children.csv`). It also verifies the manifest invariant `source_data_hash == artifacts["children.csv"]`. The API serves child records from the run directory's `children.csv` snapshot, not from the live `data/children.csv` mount — this ensures child records always match the fitted results. If validation fails, the API refuses to start with a clear error message. If `results/current` does not exist, the API starts in degraded mode (health returns `DegradedResponse` with only `status: "degraded"` — provenance fields are absent per the discriminated union).
 
@@ -1378,7 +1392,7 @@ Only `run_all.py` publishes to `results/current`. It is the single authoritative
 | Observable-signature recovery (R-02) | >= 65%, 50 seeds, 10K bootstrap resamples, percentile CI lower bound | Release gate |
 | Plug-in predictive check | Generate and record 7 diagnostic metrics (3 change-count + 4 per-trait); no automated pass/fail | Release gate (generation only) |
 | Pedigree consistency | Shared-parent litters produce matching genotypes (diagnostic) | Release gate |
-| Optimizer quality | Per-trait exhaustive match at V=11; full-litter exhaustive match at V=3; multi-start gap < 1.0 | Release gate |
+| Optimizer quality | Per-trait exhaustive match at V=11; full-litter exhaustive match at V=3; multi-start gap <= 1.0 or optimization mode escalated to multi-start-5 (Section 4.11) | Release gate |
 | Determinism (R-10) | Identical scores + canonical genotypes | Per-commit (fast fixture) |
 
 ### 11.3 Requirements Traceability Matrix
@@ -1421,7 +1435,7 @@ Only `run_all.py` publishes to `results/current`. It is the single authoritative
 | RW-03 | Result artifact provenance skew | High | Medium | Atomic publication; API validates hashes at startup (Section 9.4) |
 | RW-04 | API/schema drift between Pydantic and TypeScript | Medium | Medium | OpenAPI generation + TS generation at build + CI drift check |
 | RW-05 | Docker image size creep | Low | High | Multi-stage builds; slim base; no dev deps |
-| RW-06 | Source data corruption | High | Low | SHA-256 assertion; single canonical input (Section 9.1) |
+| RW-06 | Source data corruption | High | Low | SHA-256 provenance fingerprint + clean-worktree policy for release runs; single canonical input (Section 9.1) |
 
 ## 13. Extension Points
 
@@ -1457,7 +1471,7 @@ Only `run_all.py` publishes to `results/current`. It is the single authoritative
 
 User-defined model specifications cannot be served via the current read-only API. This extension requires an asynchronous job API (submit, poll, cancel), execution isolation, resource limits, and result persistence. Explicitly out of scope for v1.0.
 
-## 14. Dependency Matrix
+## 14. Key Dependency Matrix
 
 | Dependency | Version | Purpose | Pinning |
 |------------|---------|---------|---------|
@@ -1480,6 +1494,8 @@ User-defined model specifications cannot be served via the current read-only API
 | vite | >= 6.0 | Build tool | package-lock.json |
 | openapi-typescript | >= 7.0 | TS type generation | package-lock.json |
 | nginx | alpine | Reverse proxy | Dockerfile |
+
+This table lists primary dependencies. Additional libraries (Recharts, TanStack Table/Query, ESLint, Prettier, Vitest, vite-plugin-compression) are pinned in `package-lock.json`; `uv.lock` is the exhaustive Python dependency inventory.
 
 ## 15. Implementation Roadmap
 
