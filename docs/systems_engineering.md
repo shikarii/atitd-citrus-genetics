@@ -2,10 +2,11 @@
 
 ATITD Citrus Genetics: statistical model validation and breeding analytics platform.
 
-**Version:** 8.4
+**Version:** 8.5
 **Date:** 2026-10-09
 
 **Changelog:**
+- v8.5: Address adversarial review round 12 CONDITIONAL PASS (0 MAJOR, 8 MINOR). Multi-start-5 defined as start 0 (canonical) + starts 1-4 (seeded) in both 4.11 and 4.12. Deterministic tie-breaking: lowest start_index wins. Seed contract simplified (removed redundant init_seed). Schema layer: added pipelines to schema_purity forbidden imports (6 contracts total), fixed stale prose. Optimizer diagnostics location corrected (validation_summary.json, not manifest). Preflight cross-reference corrected to items 3-4. clone_share Field(le=0.6) matches production c-grid. Coverage TOML comment aligned with prose.
 - v8.4: Address adversarial review round 11 CONDITIONAL PASS (0 MAJOR, 15 MINOR). Optimizer release gate clarified (gap <= 1.0 or escalated). R-01 scoped to upstream single-start compatibility. Multi-start-5 defined as canonical + 4 seeded starts. Schema layer moved beside Compute in architecture diagram. Clone modes "supported" not "used." color_floor formula defined. V=11/V=3 counts labeled as upper bounds. Per-model optimizer_diagnostics added to validation_summary.json. Removed stale ruff.toml from package tree. CI YAML labeled as schematic pseudocode. Dependency matrix renamed "Key" with completeness note. Reverse proxy port description deployment-neutral. K8s pod restart documented after publishing. Crash recovery .tmp cleanup is manual only. SHA-256 "verified" changed to "fingerprinted for provenance."
 - v8.3: Address adversarial review round 10 FAIL (2 MAJOR, 13 MINOR). MAJOR: optimizer escalation is now a preflight step before production comparison (Section 9.4 step 5); hostPath Directory failure behavior corrected (pod fails to start, not degraded). MINOR: import-linter prose no longer overstates enforcement scope; R-08 metric corrected to "total coverage (branch enabled)"; convergence 0.01 flag renamed to material residual-improvement warning (distinct from 1e-6 convergence); R-03a no longer described as the ranking criterion definer; degraded-mode 503 now lists all 7 data endpoints; ESLint lint-web uses --max-warnings 0; nginx gzip clarified (gzip_static for precompressed assets, gzip on for API proxy); namespace wording changed to "scoping"; scripts/ exclusion says "analytics runtime surface" not "library"; CI section labeled "Target Architecture" with phase references; add-model procedure requires upstream variants() update; add-dataset notes R-01/R-02 are dataset-specific fixtures; Pydantic clone_share uses Field(ge=0,le=1), fitted_at uses datetime.
 - v8.2: Address adversarial review round 9 CONDITIONAL PASS (0 MAJOR, 4 MINOR). Fixed stale check_loc.py self-certification prose (now references test_check_loc.py). R-11 now states generated TS types exception explicitly. Architecture diagrams made deployment-neutral (loopback, not 127.0.0.1:80). K8s kind setup: documented extraMounts requirement. ESLint generated types: scoped override (not full ignores) for LOC rules only.
@@ -174,7 +175,7 @@ block-beta
     S --> CO
 ```
 
-**Dependency direction:** Each layer may depend only on layers below it. Core has zero dependencies on any other layer. Pipelines are pure computation (no filesystem IO). API and CLI are sibling outer adapters at the same architectural level — neither may import the other (Section 7.5). CLI orchestrates pipelines + IO for producing results. API reads published results via IO/schemas for serving. Schemas are a shared lower-level layer consumed by both pipelines and IO — they sit at the IO/Schemas level, not above Compute. Import-linter enforces the critical boundaries via 6 forbidden-import contracts (Section 7.5): core purity, pipeline isolation from API/IO/CLI, schema isolation from API/IO/CLI, IO isolation from API/CLI, and the API/CLI sibling boundary. The "no filesystem IO in pipelines" constraint is enforced by code review, not import-linter.
+**Dependency direction:** Each layer may depend only on layers below it. Core has zero dependencies on any other layer. Pipelines are pure computation (no filesystem IO). API and CLI are sibling outer adapters at the same architectural level — neither may import the other (Section 7.5). CLI orchestrates pipelines + IO for producing results. API reads published results via IO/schemas for serving. Schemas sit beside Compute as a shared data-contract layer: both pipelines and IO may import schemas, but schemas must not import pipelines or IO. Import-linter enforces the critical boundaries via 6 forbidden-import contracts (Section 7.5): core purity, pipeline isolation from API/IO/CLI, schema isolation from API/IO/CLI/pipelines, IO isolation from API/CLI, and the API/CLI sibling boundary. The "no filesystem IO in pipelines" constraint is enforced by code review, not import-linter.
 
 ### 3.3 Package Structure
 
@@ -533,34 +534,30 @@ Coordinate ascent is not globally optimal. To ensure model comparison is not con
 
    Enumeration is over the same feasible candidate space used by production fitting: for each (rule, displayed_value) pair, only gene pairs satisfying display(g1, g2) == displayed_value are considered. For clone-enabled models, every enumerated genotype assignment is maximized over the full production c grid (121 points) before comparing objective values. For clone=False models, c is fixed at 0.
 
-3. **Multi-start validation:** For representative models from each objective-function family — one8 (CLAIM), indep (p=0.14), one_g1 — run coordinate ascent from 5 starts per litter: the canonical upstream initialization plus 4 seeded alternatives (see seed contract below). Compare best-of-5 vs the canonical single-start result on the full V=1001 dataset. The canonical start is always included so escalation cannot discard a known-good solution.
+3. **Multi-start validation:** For representative models from each objective-function family — one8 (CLAIM), indep (p=0.14), one_g1 — run coordinate ascent from 5 starts per litter: start 0 is the canonical upstream initialization; starts 1–4 are seeded alternatives (see seed contract below). Compare best-of-5 vs the canonical single-start result on the full V=1001 dataset. The canonical start is always included so escalation cannot discard a known-good solution. **Tie-breaking:** if multiple starts produce equal scores, the lowest start_index wins (canonical start = index 0 has priority). This ensures R-10 determinism under multi-start mode.
 
 4. **Escalation rule (preflight):** Multi-start validation runs as a preflight step (Section 9.4 step 5) before the production 30-model comparison. If the best-of-5 exceeds single-start by more than 1.0 log-score units on any litter:
    - The entire run uses best-of-5 for **all** models (not just the flagged one) to maintain comparable optimization budgets.
-   - The run manifest records optimization mode ("single-start" or "multi-start-5") and per-model convergence diagnostics.
+   - The run manifest records optimization mode ("single-start" or "multi-start-5"). Per-model/per-litter convergence diagnostics are recorded in `validation_summary.json`.
    - The optimization mode is frozen before any production fitting begins — it cannot change mid-run.
 
 5. **Convergence diagnostic:** Each fit reports rounds used (out of max 8) and final per-round improvement. Convergence is defined as per-round improvement < 1e-6 (Section 4.12). Fits using all 8 rounds without convergence are flagged. A separate **material residual-improvement warning** is raised when the final improvement exceeds 0.01, indicating the optimizer may be far from a local optimum.
 
-6. **Deterministic optimizer seed contract:** Multi-start initializations use deterministic seeds derived from a root optimizer seed recorded in the run manifest:
-   ```
-   init_seed = hash(root_optimizer_seed, model_id, litter_name, start_index)
-   ```
-   using SHA-256 truncated to 64 bits. The root optimizer seed is a fixed constant in `constants.py` (not randomly generated per run). Seeds are derived from the stable `model_id` (not the display name, which may change). For each gene coordinate (parent P, trait t), a per-coordinate seed is derived:
+6. **Deterministic optimizer seed contract:** Start 0 uses the canonical upstream initialization (no seed needed). Starts 1–4 use deterministic seeds derived from a root optimizer seed recorded in the run manifest (SHA-256 truncated to 64 bits). The root optimizer seed is a fixed constant in `constants.py` (not randomly generated per run). Seeds are derived from the stable `model_id` (not the display name, which may change). For each gene coordinate (parent P, trait t), a per-coordinate seed is derived:
    ```
    coord_seed = hash(root_optimizer_seed, model_id, litter_name, start_index, parent, trait)
    ```
-   The starting candidate index is `coord_seed_value % len(candidates)` where `candidates` is the flattened list of valid gene pairs for that (rule, displayed_value). This avoids correlation between coordinates that happen to share the same candidate count. This ensures R-10 determinism holds even under multi-start mode. The R-02 bootstrap resampling uses a separate deterministic seed schedule: `bootstrap_seed = hash(root_bootstrap_seed, trial_index)`.
+   where `start_index` is 1–4 for seeded alternatives. The starting candidate index is `coord_seed_value % len(candidates)` where `candidates` is the flattened list of valid gene pairs for that (rule, displayed_value). This avoids correlation between coordinates that happen to share the same candidate count. This ensures R-10 determinism holds even under multi-start mode. The R-02 bootstrap resampling uses a separate deterministic seed schedule: `bootstrap_seed = hash(root_bootstrap_seed, trial_index)`.
 
 ### 4.12 Production Fitting Algorithm
 
-The coordinate-ascent fitting procedure matches the upstream `LitterFit.fit()` implementation exactly. For a single litter under a given model:
+The coordinate-ascent fitting kernel matches the upstream `LitterFit.fit()` implementation exactly (scan order, convergence threshold, c-grid). The multi-start wrapper (Section 4.11) is an extension that invokes this kernel multiple times with different initializations. For a single litter under a given model:
 
-1. **Initialization:** For each trait t and parent P, enumerate candidate gene pairs via `candidates(rule, displayed_value)`. Initialize:
+1. **Initialization:** For each trait t and parent P, enumerate candidate gene pairs via `candidates(rule, displayed_value)`. Start 0 (canonical) uses the upstream initialization:
    - mean rule: middle element of the last candidate group (even-sum group)
    - min/max rule: (displayed_value, displayed_value) — both genes equal the shown value
    - g1 rule: (displayed_value, 500) — gene 2 is unobservable, fixed by convention
-   Under multi-start mode, initialization uses a deterministic seed-derived candidate index instead (see Section 4.11 item 6; the seed selects an index into the flattened candidate list using `seed_value % candidate_count`).
+   Starts 1–4 (seeded alternatives, multi-start mode only) use a deterministic seed-derived candidate index instead (see Section 4.11 item 6; the seed selects an index into the flattened candidate list using `seed_value % candidate_count`).
 
 2. **Coordinate scan:** For each round (up to 8 rounds):
    a. For each trait t in order (Color=0, Sweet=1, Size=2, Length=3):
@@ -653,7 +650,7 @@ class ModelDetail(ModelComparison):
 class LitterSummary(BaseModel):
     litter: str
     n: int
-    clone_share: float = Field(ge=0, le=1)
+    clone_share: float = Field(ge=0, le=0.6)  # Matches production c-grid max
     loglik: float
 
 class FittedGenes(BaseModel):
@@ -882,7 +879,7 @@ source = ["citrus_genetics"]
 omit = [
     "*/cli/*",          # thin orchestrators tested via integration
     "*/io/extract.py",  # requires real Excel files, tested via integration
-    "*/scripts/*",      # quality enforcement tools, not library code
+    "*/scripts/*",      # developer quality tooling, not analytics runtime code
 ]
 ```
 
@@ -924,13 +921,14 @@ forbidden_modules =
     uvicorn
 
 [importlinter:contract:schema_purity]
-name = schemas must not depend on API, IO, or CLI
+name = schemas must not depend on API, IO, CLI, or pipelines
 type = forbidden
 source_modules = citrus_genetics.schemas
 forbidden_modules =
     citrus_genetics.api
     citrus_genetics.io
     citrus_genetics.cli
+    citrus_genetics.pipelines
     fastapi
     uvicorn
 
@@ -1285,7 +1283,7 @@ Only `run_all.py` publishes to `results/current`. It is the single authoritative
 2. Create `results/runs/.tmp-<run_id>/`
 3. Copy `data/children.csv` into `.tmp-<run_id>/children.csv` and compute its SHA-256 hash. Record as both `source_data_hash` and `artifacts["children.csv"]` (these must be identical — a manifest invariant). `fsync` the snapshot file.
 4. **Load the snapshot** (`results/runs/.tmp-<run_id>/children.csv`) as the sole input for all subsequent computation. The live `data/children.csv` is never reopened after this step.
-5. **Optimizer-mode preflight** (Section 4.11 item 3): Run multi-start validation on representative models (one per objective-function family) using the snapshot. If any model's best-of-5 exceeds single-start by > 1.0 log-score units, set optimization mode to "multi-start-5" for the entire run; otherwise "single-start." This decision is frozen before the production comparison begins.
+5. **Optimizer-mode preflight** (Section 4.11 items 3–4): Run multi-start validation on representative models (one per objective-function family) using the snapshot. If any model's best-of-5 exceeds single-start by > 1.0 log-score units, set optimization mode to "multi-start-5" for the entire run; otherwise "single-start." This decision is frozen before the production comparison begins.
 6. Execute model comparison pipeline (30 models, all litters) using the snapshot and the frozen optimization mode from step 5
 7. Execute validation pipeline (sim_checks, PPC) using the snapshot
 8. Write all remaining artifacts + unified run manifest into `.tmp-<run_id>/`
@@ -1386,7 +1384,7 @@ Only `run_all.py` publishes to `results/current`. It is the single authoritative
 
 | Check | Method | Frequency |
 |-------|--------|-----------|
-| Model fit correctness (R-01) | Compare fit_ll against -5462.5 within 0.05 | Release gate |
+| Model fit correctness (R-01) | Compare single-start fit_ll against -5462.5 within 0.05 (upstream compatibility) | Release gate |
 | Pipeline completeness (R-03) | 30 models scored and ranked deterministically | Per-commit (fast fixture) |
 | Legacy ranking (R-03a) | CLAIM #1 in cv_ll on historical data (regression fixture, not axiom) | Release gate |
 | Observable-signature recovery (R-02) | >= 65%, 50 seeds, 10K bootstrap resamples, percentile CI lower bound | Release gate |

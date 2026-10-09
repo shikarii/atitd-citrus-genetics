@@ -99,7 +99,7 @@ class LitterSummary(BaseModel):
 
     litter: str
     n: int
-    clone_share: float = Field(ge=0, le=1)
+    clone_share: float = Field(ge=0, le=0.6)
     loglik: float
 
 

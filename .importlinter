@@ -26,7 +26,7 @@ forbidden_modules =
     citrus_genetics.cli
 
 [importlinter:contract:schema_purity]
-name = schemas must not depend on API, IO, or CLI
+name = schemas must not depend on API, IO, CLI, or pipelines
 type = forbidden
 source_modules =
     citrus_genetics.schemas
@@ -34,6 +34,7 @@ forbidden_modules =
     citrus_genetics.api
     citrus_genetics.io
     citrus_genetics.cli
+    citrus_genetics.pipelines
 
 [importlinter:contract:io_purity]
 name = IO must not depend on API or CLI
