@@ -2,10 +2,11 @@
 
 ATITD Citrus Genetics: statistical model validation and breeding analytics platform.
 
-**Version:** 8.1
+**Version:** 8.2
 **Date:** 2026-10-09
 
 **Changelog:**
+- v8.2: Address adversarial review round 9 CONDITIONAL PASS (0 MAJOR, 4 MINOR). Fixed stale check_loc.py self-certification prose (now references test_check_loc.py). R-11 now states generated TS types exception explicitly. Architecture diagrams made deployment-neutral (loopback, not 127.0.0.1:80). K8s kind setup: documented extraMounts requirement. ESLint generated types: scoped override (not full ignores) for LOC rules only.
 - v8.1: Address adversarial review round 8 (2 MAJOR, 7 MINOR). K8s: replaced Ingress with kubectl port-forward for localhost-only access; added hostPath volume contract for results. R-08 wording clarified to reference coverage-eligible subset. LOC description corrected to physical source span (not code-only). Added test_check_loc.py for R-11 enforcement verification. Generated TS types (web/src/types/) exempted from LOC rules. Per-file-ignores prose corrected to match actual TOML (D101, D102, D103, D107 not D101-D107). "First gate" language scoped to lint-python. Implementation roadmap reconciled with actual Phase 1 deliverables.
 - v8.0: Phase 1 implementation decisions. Added LOC enforcement (600 lines/file, 60 lines/function Python, 90 lines/function TypeScript) via check_loc.py script. Added Kubernetes manifests (namespace, deployments, services, ingress). Updated ruff ignore list to match implementation (CPY001, ANN401; removed deprecated ANN101/ANN102). Added per-file-ignores for CLI (T201), schemas (D101), tests (S101, D101, D102, D103, D107, ANN, PLR2004). Added coverage exclusions for CLI orchestrators and extract.py. Expanded frontend quality section with comprehensive ESLint rules from claude-devtools conventions (strict-boolean-expressions, explicit-function-return-type, max-depth 4, max-lines-per-function 90, max-lines 600). Added exactOptionalPropertyTypes, noPropertyAccessFromIndexSignature, noFallthroughCasesInSwitch to TypeScript compiler options. LOC check integrated as first gate within lint-python.
 - v7.1: Address adversarial review round 7 CONDITIONAL PASS (0 MAJOR, 9 MINOR). Canonical genotype defined as algorithm output. Fixed 8->7 PPC metrics. Degraded response fields absent not null. Added NoRunLoadedResponse schema. Per-coordinate seed derivation. uv.lock hash in manifest. validation_summary.json schema. V=11 combination count wording. Removed data/ mount from API container.
@@ -66,7 +67,7 @@ ATITD Citrus Genetics is a full-stack analytics platform for validating and expl
 | R-08 | Test coverage | >= 80% line coverage on coverage-eligible citrus_genetics modules (excludes CLI orchestrators, extract.py, and scripts/ per Section 7.4) | CI job: `python-quality` |
 | R-09 | Container health | All services (api + web) report healthy within 30s of `docker compose up --wait` | CI job: `docker-smoke` with `--wait-timeout 30` |
 | R-10 | Deterministic results | Identical floored log-scores plus identical canonical genotype representation (with deterministic tie-breaking for non-identified coordinates) given same input data, same code revision, same platform | Fast CI: `test_determinism` |
-| R-11 | LOC limits | Python: 600 lines/file, 60 lines/function. TypeScript: 600 lines/file, 90 lines/function. HTML exempt. | CI job: `python-quality` (loc-check), `web-quality` (ESLint) |
+| R-11 | LOC limits | Python: 600 lines/file, 60 lines/function. Handwritten TypeScript/TSX: 600 lines/file, 90 lines/function. Generated types (`web/src/types/`) and HTML exempt. Exclusions defined in Section 7.6. | CI job: `python-quality` (loc-check), `web-quality` (ESLint) |
 
 ## 2. Technology Stack
 
@@ -129,7 +130,7 @@ flowchart TD
     E --> F
     E --> G["Run Directory<br/>results/runs/&lt;id&gt;/<br/>+ results/current symlink"]
     G --> H["FastAPI Server<br/>loads current run at startup<br/>serves from memory (CLAIM model)"]
-    H --> I["nginx (127.0.0.1:80)<br/>static React app + /api proxy"]
+    H --> I["nginx<br/>sole UI/API ingress<br/>host exposure restricted to loopback"]
     I --> J["React Dashboard<br/>TS types generated from OpenAPI"]
 ```
 
@@ -142,7 +143,7 @@ block-beta
         P["Presentation<br/>React (TypeScript), Recharts, TanStack<br/>Types generated from OpenAPI"]
     end
     block:Proxy
-        N["Reverse Proxy<br/>nginx: static files, /api proxy, gzip<br/>Bound to 127.0.0.1:80 only"]
+        N["Reverse Proxy<br/>nginx: static files, /api proxy, gzip<br/>Host exposure restricted to loopback<br/>(Compose: 127.0.0.1:80, K8s: port-forward 127.0.0.1:8080)"]
     end
     block:OuterAdapters["Outer Adapters (siblings, no mutual dependencies)"]
         A["API Layer<br/>FastAPI: serves published results<br/>OpenAPI schema = normative contract"]
@@ -782,7 +783,9 @@ kubectl port-forward -n citrus-genetics service/web 8080:80 --address 127.0.0.1
 
 This binds exclusively to `127.0.0.1`, enforcing the same security boundary as Docker Compose's `127.0.0.1:80:80`.
 
-**Local cluster setup:** Images use `imagePullPolicy: Never` for pre-built local images (e.g., `minikube image load`, `kind load docker-image`). The hostPath volume requires the results directory to exist on the cluster node's filesystem — for minikube this means `minikube mount ./results:/host-results` or equivalent.
+**Local cluster setup:** Images use `imagePullPolicy: Never` for pre-built local images (e.g., `minikube image load`, `kind load docker-image`). The hostPath volume (path: `/host-results`) requires the results directory to exist on the cluster node's filesystem:
+- **minikube:** `minikube mount ./results:/host-results`
+- **kind:** Requires `extraMounts` in the kind cluster config to map the host's `./results` directory to `/host-results` inside the kind node container. Without this, the hostPath is absent and the API starts in degraded mode.
 
 ## 7. Code Quality Standards
 
@@ -878,7 +881,7 @@ omit = [
 **Coverage exclusions rationale:**
 - **CLI scripts** (`run_all.py`, `run_compare.py`, `run_simchecks.py`): Thin orchestrators that coordinate pipeline calls, IO, and atomic publication. They require a full pipeline run with real data to test meaningfully — covered by `release-validation` CI, not per-commit tests.
 - **`io/extract.py`**: Excel ingestion module that requires real `.xlsx` files. Tested via integration with actual datasets, not synthetic fixtures.
-- **`scripts/`** (`check_loc.py`): Quality enforcement tooling, not analytics library code. Validated by its own gate pass (if it runs without error, it works).
+- **`scripts/`** (`check_loc.py`): Quality enforcement tooling, not analytics library code. Its behavior is independently verified by `test_check_loc.py`; it is excluded from analytics coverage because it is not part of the citrus_genetics library.
 
 ### 7.5 Architectural Linting: import-linter
 
@@ -958,7 +961,7 @@ forbidden_modules = citrus_genetics.api
 
 **Python enforcement:** The `check_loc.py` script walks the `python/` directory, parses each `.py` file with the `ast` module, and reports violations for files exceeding 600 lines or functions/methods exceeding 60 lines. It runs as the **first gate** in `lint-python` (before ruff, mypy, import-linter) and is independently runnable via `make loc-check`.
 
-**TypeScript enforcement:** LOC limits for TypeScript are enforced via ESLint rules (`max-lines: 600`, `max-lines-per-function: 90`). The TypeScript function limit is 90 (not 60) because Prettier formatting expansion (trailing commas, multi-line destructuring, explicit return types) adds ~50% more lines compared to equivalent Python. This matches the convention established in claude-devtools. **Generated types are exempt:** The `web/src/types/` directory (generated by `openapi-typescript`, not hand-edited) is excluded from ESLint LOC rules via the ESLint config's `ignores` array. Generated type files may legitimately exceed 600 lines as the API surface grows.
+**TypeScript enforcement:** LOC limits for TypeScript are enforced via ESLint rules (`max-lines: 600`, `max-lines-per-function: 90`). The TypeScript function limit is 90 (not 60) because Prettier formatting expansion (trailing commas, multi-line destructuring, explicit return types) adds ~50% more lines compared to equivalent Python. This matches the convention established in claude-devtools. **Generated types are exempt:** The `web/src/types/` directory (generated by `openapi-typescript`, not hand-edited) is excluded from ESLint LOC rules via a scoped ESLint override that disables `max-lines` and `max-lines-per-function` for that directory. Other ESLint rules remain active; `tsc --noEmit` still type-checks the generated files. Generated type files may legitimately exceed 600 lines as the API surface grows.
 
 **Why AST-based, not line-counting:** The AST identifies function boundaries precisely (`FunctionDef.lineno` through `FunctionDef.end_lineno`). The measured span is the physical source range from `def` to the last line of the function body, inclusive of internal comments and blank lines. This is intentional — a function with many internal comments is still a large function that should be refactored. Decorators are not included in the span (they precede `FunctionDef.lineno`). Nested functions are measured independently as separate `FunctionDef` nodes.
 
