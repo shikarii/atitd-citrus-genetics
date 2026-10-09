@@ -114,7 +114,7 @@ def _route_health(run_data: RunData) -> HealthyResponse | DegradedResponse:
         run_id=run_data.manifest.get("run_id", ""),
         source_data_hash=run_data.manifest.get("source_data_hash", ""),
         code_commit=run_data.manifest.get("code_commit", ""),
-        fitted_at=run_data.manifest.get("timestamp", ""),
+        fitted_at=run_data.manifest.get("timestamp", "1970-01-01T00:00:00"),
         artifact_count=len(run_data.manifest.get("artifacts", {})),
     )
 

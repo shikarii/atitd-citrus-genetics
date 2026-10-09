@@ -6,6 +6,7 @@ schema is derived from these definitions.
 
 from __future__ import annotations
 
+from datetime import datetime  # noqa: TC003 — Pydantic needs this at runtime for validation
 from enum import StrEnum
 from typing import Annotated, Literal
 
@@ -53,7 +54,7 @@ class HealthyResponse(BaseModel):
     run_id: str
     source_data_hash: str
     code_commit: str
-    fitted_at: str
+    fitted_at: datetime
     artifact_count: int = Field(gt=0)
 
 
@@ -98,7 +99,7 @@ class LitterSummary(BaseModel):
 
     litter: str
     n: int
-    clone_share: float
+    clone_share: float = Field(ge=0, le=1)
     loglik: float
 
 
