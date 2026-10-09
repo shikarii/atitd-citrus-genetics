@@ -41,9 +41,7 @@ def kernel(shape: str, r: int) -> tuple[NDArray[np.intp], NDArray[np.float64]]:
     """
     offs = np.arange(-r, r + 1)
     w: NDArray[np.float64] = (
-        np.ones(len(offs), dtype=np.float64)
-        if shape == "uniform"
-        else (r + 1 - np.abs(offs)).astype(np.float64)
+        np.ones(len(offs), dtype=np.float64) if shape == "uniform" else (r + 1 - np.abs(offs)).astype(np.float64)
     )
     return offs, w / w.sum()
 

@@ -1,0 +1,61 @@
+name: Quality Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Format check
+        run: uv run ruff format --check python/
+
+      - name: LOC check
+        run: uv run python -m citrus_genetics.scripts.check_loc
+
+      - name: Lint (ruff)
+        run: uv run ruff check python/
+
+      - name: Type check (mypy)
+        run: uv run mypy
+
+      - name: Import contracts (import-linter)
+        run: uv run lint-imports
+
+      - name: Tests
+        run: uv run pytest
+
+      - name: OpenAPI drift check
+        run: |
+          uv run python -c "from citrus_genetics.api.app import create_app; import json; app = create_app(); print(json.dumps(app.openapi(), indent=2))" > openapi-generated.json
+          diff openapi.json openapi-generated.json
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Start services
+        run: docker compose up -d --wait --wait-timeout 30
+
+      - name: Health check
+        run: curl -f http://127.0.0.1/api/health
+
+      - name: Tear down
+        if: always()
+        run: docker compose down

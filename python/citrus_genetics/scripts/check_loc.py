@@ -154,9 +154,7 @@ def scan_python_files(
         for name, start, end in collect_python_functions(path):
             func_lines = end - start + 1
             if func_lines > max_function_lines:
-                function_violations.append(
-                    FunctionViolation(path, name, start, end, func_lines, max_function_lines)
-                )
+                function_violations.append(FunctionViolation(path, name, start, end, func_lines, max_function_lines))
 
     return file_violations, function_violations
 
@@ -255,9 +253,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f"check_loc: root directory not found: {root}\n")
         return 1
 
-    file_violations, function_violations = scan_python_files(
-        root, max_file_lines, max_function_lines
-    )
+    file_violations, function_violations = scan_python_files(root, max_file_lines, max_function_lines)
 
     report_violations(file_violations, function_violations)
 

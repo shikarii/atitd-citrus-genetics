@@ -1,0 +1,774 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Citrus Genetics API",
+    "description": "Statistical model validation for ATITD citrus tree genetics",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/HealthyResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DegradedResponse"
+                    }
+                  ],
+                  "title": "Response Health Api Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models": {
+      "get": {
+        "summary": "Get Models",
+        "operationId": "get_models_api_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "$ref": "#/components/schemas/ModelComparison"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoRunLoadedResponse"
+                    }
+                  ],
+                  "title": "Response Get Models Api Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/{model_id}": {
+      "get": {
+        "summary": "Get Model",
+        "operationId": "get_model_api_models__model_id__get",
+        "parameters": [
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ModelDetail"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoRunLoadedResponse"
+                    }
+                  ],
+                  "title": "Response Get Model Api Models  Model Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/litters": {
+      "get": {
+        "summary": "Get Litters",
+        "operationId": "get_litters_api_litters_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "$ref": "#/components/schemas/LitterSummary"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoRunLoadedResponse"
+                    }
+                  ],
+                  "title": "Response Get Litters Api Litters Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/litters/{name}": {
+      "get": {
+        "summary": "Get Litter",
+        "operationId": "get_litter_api_litters__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/LitterDetail"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoRunLoadedResponse"
+                    }
+                  ],
+                  "title": "Response Get Litter Api Litters  Name  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/litters/{name}/genes": {
+      "get": {
+        "summary": "Get Litter Genes",
+        "operationId": "get_litter_genes_api_litters__name__genes_get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FittedGenes"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoRunLoadedResponse"
+                    }
+                  ],
+                  "title": "Response Get Litter Genes Api Litters  Name  Genes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ppc": {
+      "get": {
+        "summary": "Get Ppc",
+        "operationId": "get_ppc_api_ppc_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PPCResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoRunLoadedResponse"
+                    }
+                  ],
+                  "title": "Response Get Ppc Api Ppc Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ppc/distributions": {
+      "get": {
+        "summary": "Get Ppc Distributions",
+        "operationId": "get_ppc_distributions_api_ppc_distributions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "$ref": "#/components/schemas/PPCDistribution"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoRunLoadedResponse"
+                    }
+                  ],
+                  "title": "Response Get Ppc Distributions Api Ppc Distributions Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChildTraits": {
+        "properties": {
+          "color": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Color"
+          },
+          "sweet": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Sweet"
+          },
+          "size": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Size"
+          },
+          "length": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Length"
+          }
+        },
+        "type": "object",
+        "required": [
+          "color",
+          "sweet",
+          "size",
+          "length"
+        ],
+        "title": "ChildTraits",
+        "description": "Observed trait values for a single child."
+      },
+      "DegradedResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "degraded",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "DegradedResponse",
+        "description": "Health response when no run is loaded."
+      },
+      "FittedGenes": {
+        "properties": {
+          "litter": {
+            "type": "string",
+            "title": "Litter"
+          },
+          "parent_a": {
+            "$ref": "#/components/schemas/TraitGenes"
+          },
+          "parent_b": {
+            "$ref": "#/components/schemas/TraitGenes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "litter",
+          "parent_a",
+          "parent_b"
+        ],
+        "title": "FittedGenes",
+        "description": "Fitted gene pairs for both parents in a litter."
+      },
+      "GenePair": {
+        "properties": {
+          "g1": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "G1"
+          },
+          "g2": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "G2"
+          }
+        },
+        "type": "object",
+        "required": [
+          "g1",
+          "g2"
+        ],
+        "title": "GenePair",
+        "description": "A pair of gene values for a single trait."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthyResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "source_data_hash": {
+            "type": "string",
+            "title": "Source Data Hash"
+          },
+          "code_commit": {
+            "type": "string",
+            "title": "Code Commit"
+          },
+          "fitted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fitted At"
+          },
+          "artifact_count": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Artifact Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "run_id",
+          "source_data_hash",
+          "code_commit",
+          "fitted_at",
+          "artifact_count"
+        ],
+        "title": "HealthyResponse",
+        "description": "Health response when a valid run is loaded."
+      },
+      "LitterDetail": {
+        "properties": {
+          "litter": {
+            "type": "string",
+            "title": "Litter"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          },
+          "clone_share": {
+            "type": "number",
+            "maximum": 0.6,
+            "minimum": 0.0,
+            "title": "Clone Share"
+          },
+          "loglik": {
+            "type": "number",
+            "title": "Loglik"
+          },
+          "genes": {
+            "$ref": "#/components/schemas/FittedGenes"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/ChildTraits"
+            },
+            "type": "array",
+            "title": "Children"
+          }
+        },
+        "type": "object",
+        "required": [
+          "litter",
+          "n",
+          "clone_share",
+          "loglik",
+          "genes",
+          "children"
+        ],
+        "title": "LitterDetail",
+        "description": "Detailed litter result with genes and children."
+      },
+      "LitterSummary": {
+        "properties": {
+          "litter": {
+            "type": "string",
+            "title": "Litter"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          },
+          "clone_share": {
+            "type": "number",
+            "maximum": 0.6,
+            "minimum": 0.0,
+            "title": "Clone Share"
+          },
+          "loglik": {
+            "type": "number",
+            "title": "Loglik"
+          }
+        },
+        "type": "object",
+        "required": [
+          "litter",
+          "n",
+          "clone_share",
+          "loglik"
+        ],
+        "title": "LitterSummary",
+        "description": "Summary of a single litter's fit."
+      },
+      "ModelComparison": {
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "fit_ll": {
+            "type": "number",
+            "title": "Fit Ll"
+          },
+          "cv_ll": {
+            "type": "number",
+            "title": "Cv Ll"
+          },
+          "cv_vs_claim": {
+            "type": "number",
+            "title": "Cv Vs Claim"
+          },
+          "children_below_threshold": {
+            "type": "integer",
+            "title": "Children Below Threshold"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_id",
+          "display_name",
+          "fit_ll",
+          "cv_ll",
+          "cv_vs_claim",
+          "children_below_threshold"
+        ],
+        "title": "ModelComparison",
+        "description": "Summary comparison result for a single model."
+      },
+      "ModelDetail": {
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "fit_ll": {
+            "type": "number",
+            "title": "Fit Ll"
+          },
+          "cv_ll": {
+            "type": "number",
+            "title": "Cv Ll"
+          },
+          "cv_vs_claim": {
+            "type": "number",
+            "title": "Cv Vs Claim"
+          },
+          "children_below_threshold": {
+            "type": "integer",
+            "title": "Children Below Threshold"
+          },
+          "per_litter": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Per Litter"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_id",
+          "display_name",
+          "fit_ll",
+          "cv_ll",
+          "cv_vs_claim",
+          "children_below_threshold",
+          "per_litter"
+        ],
+        "title": "ModelDetail",
+        "description": "Detailed model result with per-litter scores."
+      },
+      "NoRunLoadedResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "no_run_loaded",
+            "title": "Error"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "title": "NoRunLoadedResponse",
+        "description": "Error response for data endpoints when no run is loaded (HTTP 503)."
+      },
+      "PPCDistribution": {
+        "properties": {
+          "metric": {
+            "type": "string",
+            "title": "Metric"
+          },
+          "observed": {
+            "type": "integer",
+            "title": "Observed"
+          },
+          "simulated_values": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Simulated Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric",
+          "observed",
+          "simulated_values"
+        ],
+        "title": "PPCDistribution",
+        "description": "Full simulated distribution for a single PPC metric."
+      },
+      "PPCMetric": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "observed": {
+            "type": "integer",
+            "title": "Observed"
+          },
+          "simulated_mean": {
+            "type": "number",
+            "title": "Simulated Mean"
+          },
+          "simulated_p2_5": {
+            "type": "number",
+            "title": "Simulated P2 5"
+          },
+          "simulated_p97_5": {
+            "type": "number",
+            "title": "Simulated P97 5"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "observed",
+          "simulated_mean",
+          "simulated_p2_5",
+          "simulated_p97_5"
+        ],
+        "title": "PPCMetric",
+        "description": "A single plug-in predictive check metric."
+      },
+      "PPCResult": {
+        "properties": {
+          "n_simulations": {
+            "type": "integer",
+            "title": "N Simulations"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/PPCMetric"
+            },
+            "type": "array",
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "n_simulations",
+          "metrics"
+        ],
+        "title": "PPCResult",
+        "description": "Summary of plug-in predictive check results."
+      },
+      "TraitGenes": {
+        "properties": {
+          "color": {
+            "$ref": "#/components/schemas/GenePair"
+          },
+          "sweet": {
+            "$ref": "#/components/schemas/GenePair"
+          },
+          "size": {
+            "$ref": "#/components/schemas/GenePair"
+          },
+          "length": {
+            "$ref": "#/components/schemas/GenePair"
+          }
+        },
+        "type": "object",
+        "required": [
+          "color",
+          "sweet",
+          "size",
+          "length"
+        ],
+        "title": "TraitGenes",
+        "description": "Fitted gene pairs for all four traits of a single parent."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

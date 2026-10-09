@@ -15,34 +15,61 @@ from citrus_genetics.io.provenance import sha256_file
 
 
 def _write_csv_artifacts(run_dir: Path) -> None:
-    children = pd.DataFrame([
-        {
-            "litter": "Hive1", "child": 1,
-            "A_color": 500, "A_sweet": 300, "A_size": 600, "A_length": 700,
-            "B_color": 400, "B_sweet": 200, "B_size": 500, "B_length": 600,
-            "color": 450, "sweet": 200, "size": 600, "length": 700,
-        },
-    ])
+    children = pd.DataFrame(
+        [
+            {
+                "litter": "Hive1",
+                "child": 1,
+                "A_color": 500,
+                "A_sweet": 300,
+                "A_size": 600,
+                "A_length": 700,
+                "B_color": 400,
+                "B_sweet": 200,
+                "B_size": 500,
+                "B_length": 600,
+                "color": 450,
+                "sweet": 200,
+                "size": 600,
+                "length": 700,
+            },
+        ]
+    )
     children.to_csv(run_dir / "children.csv", index=False)
 
-    comparison = pd.DataFrame([{
-        "model": "CLAIM: 1 of 8 genes, uniform +-150",
-        "model_id": "claim",
-        "fit_ll": -100.0,
-        "cv_ll": -120.0,
-        "cv_vs_claim": 0.0,
-        "children_impossible": 0,
-        "ll_Hive1": -100.0,
-    }])
+    comparison = pd.DataFrame(
+        [
+            {
+                "model": "CLAIM: 1 of 8 genes, uniform +-150",
+                "model_id": "claim",
+                "fit_ll": -100.0,
+                "cv_ll": -120.0,
+                "cv_vs_claim": 0.0,
+                "children_impossible": 0,
+                "ll_Hive1": -100.0,
+            }
+        ]
+    )
     comparison.to_csv(run_dir / "model_comparison.csv", index=False)
 
-    genes = pd.DataFrame([{
-        "litter": "Hive1", "n": 1, "clone_share": 0.0, "loglik": -100.0,
-        "A_color_genes": "500/500", "B_color_genes": "400/400",
-        "A_sweet_genes": "300/300", "B_sweet_genes": "200/200",
-        "A_size_genes": "600/600", "B_size_genes": "500/500",
-        "A_length_genes": "700/500", "B_length_genes": "600/500",
-    }])
+    genes = pd.DataFrame(
+        [
+            {
+                "litter": "Hive1",
+                "n": 1,
+                "clone_share": 0.0,
+                "loglik": -100.0,
+                "A_color_genes": "500/500",
+                "B_color_genes": "400/400",
+                "A_sweet_genes": "300/300",
+                "B_sweet_genes": "200/200",
+                "A_size_genes": "600/600",
+                "B_size_genes": "500/500",
+                "A_length_genes": "700/500",
+                "B_length_genes": "600/500",
+            }
+        ]
+    )
     genes.to_csv(run_dir / "fitted_genes_claim.csv", index=False)
 
 
@@ -50,24 +77,36 @@ def _write_ppc_artifacts(run_dir: Path) -> None:
     ppc = {
         "n_simulations": 10,
         "metrics": [
-            {"name": "0 traits changed", "observed": 5, "simulated_mean": 4.5,
-             "simulated_p2_5": 2.0, "simulated_p97_5": 7.0},
+            {
+                "name": "0 traits changed",
+                "observed": 5,
+                "simulated_mean": 4.5,
+                "simulated_p2_5": 2.0,
+                "simulated_p97_5": 7.0,
+            },
         ],
     }
     (run_dir / "ppc_summary.json").write_text(json.dumps(ppc), encoding="utf-8")
 
-    dists = pd.DataFrame([{
-        "metric": "0 traits changed",
-        "observed": 5,
-        "simulated_values": [4, 5, 3, 6, 4, 5, 5, 4, 3, 6],
-    }])
+    dists = pd.DataFrame(
+        [
+            {
+                "metric": "0 traits changed",
+                "observed": 5,
+                "simulated_values": [4, 5, 3, 6, 4, 5, 5, 4, 3, 6],
+            }
+        ]
+    )
     dists.to_parquet(run_dir / "ppc_distributions.parquet", index=False)
 
 
 def _write_manifest_file(run_dir: Path, run_id: str) -> None:
     artifact_names = [
-        "children.csv", "model_comparison.csv", "fitted_genes_claim.csv",
-        "ppc_summary.json", "ppc_distributions.parquet",
+        "children.csv",
+        "model_comparison.csv",
+        "fitted_genes_claim.csv",
+        "ppc_summary.json",
+        "ppc_distributions.parquet",
     ]
     artifacts = {name: sha256_file(run_dir / name) for name in artifact_names}
     manifest = {

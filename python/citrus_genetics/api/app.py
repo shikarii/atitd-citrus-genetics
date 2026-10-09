@@ -148,9 +148,7 @@ def _route_get_model(run_data: RunData, model_id: str) -> ModelDetail | NoRunLoa
         mid = id_lookup.get(row["model"], row.get("model_id", ""))
         if mid == model_id:
             per_litter = {
-                col.replace("ll_", ""): float(row[col])
-                for col in run_data.comparison.columns
-                if col.startswith("ll_")
+                col.replace("ll_", ""): float(row[col]) for col in run_data.comparison.columns if col.startswith("ll_")
             }
             return ModelDetail(
                 model_id=mid,
