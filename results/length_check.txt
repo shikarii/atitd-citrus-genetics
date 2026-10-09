@@ -1,0 +1,5 @@
+fake CLAIM seed 11: CLAIM -5460.3, length=min -5406.0, length=max -5408.6  gain of length=min over CLAIM: +54.3
+fake CLAIM seed 12: CLAIM -5504.7, length=min -5438.9, length=max -5440.9  gain of length=min over CLAIM: +65.8
+fake CLAIM seed 13: CLAIM -5491.3, length=min -5425.7, length=max -5440.9  gain of length=min over CLAIM: +65.6
+fake CLAIM seed 14: CLAIM -5553.4, length=min -5488.3, length=max -5501.6  gain of length=min over CLAIM: +65.1
+fake CLAIM seed 15: CLAIM -5505.1, length=min -5442.2, length=max -5437.9  gain of length=min over CLAIM: +62.9

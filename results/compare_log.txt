@@ -1,0 +1,35 @@
+                                 model   fit_ll    cv_ll  cv_vs_claim  children_impossible
+each gene nudged independently, p=0.14  -5609.8  -5844.4        252.7                    0
+each gene nudged independently, p=0.17  -5631.9  -5856.7        240.4                    0
+each gene nudged independently, p=0.11  -5611.6  -5866.1        231.0                    0
+ each gene nudged independently, p=0.2  -5671.3  -5890.6        206.5                    0
+each gene nudged independently, p=0.08  -5650.1  -5916.0        181.1                    0
+    CLAIM: 1 of 8 genes, uniform +-150  -5462.5  -6097.1          0.0                    0
+                     color rounds down  -5462.5  -6097.1          0.0                    0
+                    no clone component  -5477.8  -6101.7         -4.6                    0
+                         uniform +-160  -5478.3  -6151.3        -54.2                    0
+                      triangular +-150  -5548.1  -6160.9        -63.8                    0
+                         uniform +-175  -5496.9  -6173.8        -76.7                    0
+                      triangular +-200  -5492.9  -6175.5        -78.4                    0
+                         uniform +-200  -5527.8  -6179.5        -82.4                    0
+                      triangular +-250  -5502.9  -6192.7        -95.6                    0
+                    sweet shown as max  -5531.5  -6356.5       -259.4                    0
+                   length shown as min  -5403.4  -6489.5       -392.4                    0
+                         uniform +-140  -5815.6  -6516.7       -419.6                   15
+                    size shown as mean  -6006.5  -6520.9       -423.8                    9
+                   sweet shown as mean  -6104.3  -6563.7       -466.6                   14
+                   length shown as max  -5410.2  -6572.1       -475.0                    0
+                     size shown as min  -5823.2  -6670.3       -573.2                    8
+                  length shown as mean  -5717.8  -6715.9       -618.8                    2
+                     sweet shown as g1  -6391.7  -6754.1       -657.0                   29
+                      size shown as g1  -6431.0  -6777.7       -680.6                   30
+                         uniform +-125  -6253.4  -7262.1      -1165.0                   30
+                    color shown as min  -6271.5  -7879.8      -1782.7                   24
+                    color shown as max  -6351.0  -7911.8      -1814.7                   28
+                         uniform +-100  -7192.7  -8104.9      -2007.8                   70
+                     color shown as g1  -8363.1  -9238.8      -3141.7                  103
+    1 gene per trait (no hidden genes) -10486.6 -10533.2      -4436.1                  169
+
+real	18m6.821s
+user	0m0.015s
+sys	0m0.000s

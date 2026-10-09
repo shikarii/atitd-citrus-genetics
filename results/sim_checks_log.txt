@@ -1,0 +1,39 @@
+Rival 'independent nudges' model uses p = 0.14
+
+1. MODEL RECOVERY (log-likelihood of each fitted model on fake data; higher = better)
+   data made by CLAIM  seed 11, fit     : CLAIM -5460.3, INDEP -5611.2, TRI150 -5527.6  -> best: CLAIM OK
+   data made by CLAIM  seed 11, held-out: CLAIM -6019.6, INDEP -5820.1, TRI150 -6051.8  -> best: INDEP WRONG
+   data made by CLAIM  seed 12, fit     : CLAIM -5504.7, INDEP -5661.9, TRI150 -5590.9  -> best: CLAIM OK
+   data made by CLAIM  seed 12, held-out: CLAIM -6258.9, INDEP -5900.3, TRI150 -6280.0  -> best: INDEP WRONG
+   data made by CLAIM  seed 13, fit     : CLAIM -5491.3, INDEP -5647.2, TRI150 -5555.6  -> best: CLAIM OK
+   data made by CLAIM  seed 13, held-out: CLAIM -5840.9, INDEP -5805.7, TRI150 -5982.2  -> best: INDEP WRONG
+   data made by INDEP  seed 11, fit     : CLAIM -7319.6, INDEP -5918.2, TRI150 -7354.3  -> best: INDEP OK
+   data made by INDEP  seed 11, held-out: CLAIM -8054.1, INDEP -6141.9, TRI150 -7998.8  -> best: INDEP OK
+   data made by INDEP  seed 12, fit     : CLAIM -7083.0, INDEP -5783.3, TRI150 -7143.6  -> best: INDEP OK
+   data made by INDEP  seed 12, held-out: CLAIM -8007.7, INDEP -5965.4, TRI150 -7995.7  -> best: INDEP OK
+   data made by INDEP  seed 13, fit     : CLAIM -7374.5, INDEP -5972.1, TRI150 -7414.4  -> best: INDEP OK
+   data made by INDEP  seed 13, held-out: CLAIM -8341.5, INDEP -6176.3, TRI150 -8384.7  -> best: INDEP OK
+   data made by TRI150 seed 11, fit     : CLAIM -5495.4, INDEP -5651.0, TRI150 -5430.9  -> best: TRI150 OK
+   data made by TRI150 seed 11, held-out: CLAIM -6182.0, INDEP -5854.0, TRI150 -6015.0  -> best: INDEP WRONG
+   data made by TRI150 seed 12, fit     : CLAIM -5491.6, INDEP -5647.5, TRI150 -5449.8  -> best: TRI150 OK
+   data made by TRI150 seed 12, held-out: CLAIM -6194.1, INDEP -5876.5, TRI150 -6086.1  -> best: INDEP WRONG
+   data made by TRI150 seed 13, fit     : CLAIM -5465.5, INDEP -5615.6, TRI150 -5406.3  -> best: TRI150 OK
+   data made by TRI150 seed 13, held-out: CLAIM -5855.7, INDEP -5813.0, TRI150 -5779.1  -> best: TRI150 OK
+
+2. HIDDEN-GENE RECOVERY on fake CLAIM data: 114 of 168 hidden Sweet/Size gene pairs exactly right
+
+3. POSTERIOR-PREDICTIVE CHECK (real data vs 300 simulations of the fitted CLAIM model)
+   0 traits visibly changed     real  257   simulated mean  253.7, 95% range 226-279
+   1 trait visibly changed      real  435   simulated mean  438.3, 95% range 413-466
+   2+ traits visibly changed    real    0   simulated mean    0.0, 95% range 0-0
+   color    visibly changed     real  170   simulated mean  167.7, 95% range 143-192
+   sweet    visibly changed     real   92   simulated mean   92.1, 95% range 76-111
+   size     visibly changed     real   90   simulated mean   93.9, 95% range 75-112
+   length   visibly changed     real   83   simulated mean   84.6, 95% range 67-102
+
+4. RIVAL CHECK: under independent nudges (p=0.14, its own fitted genes) children with 2+ visibly
+   changed traits: real 1, expected 96.8 (95% range 78-115)
+
+real	36m50.122s
+user	0m0.000s
+sys	0m0.015s

@@ -1,0 +1,4 @@
+Hive1a False: ll -628.4 c=0.00 | True: ll -628.4 c=0.00 | nudged: ll -628.4 c=0.00
+Hive1b False: ll -655.8 c=0.00 | True: ll -643.5 c=0.10 | nudged: ll -614.8 c=0.34
+Hive1c False: ll -516.3 c=0.00 | True: ll -516.3 c=0.00 | nudged: ll -516.3 c=0.00
+Hive7 False: ll -610.6 c=0.00 | True: ll -609.9 c=0.01 | nudged: ll -610.6 c=0.01
