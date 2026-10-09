@@ -2,11 +2,12 @@
 
 ATITD Citrus Genetics: statistical model validation and breeding analytics platform.
 
-**Version:** 8.0
+**Version:** 8.1
 **Date:** 2026-10-09
 
 **Changelog:**
-- v8.0: Phase 1 implementation decisions. Added LOC enforcement (600 lines/file, 60 lines/function Python, 90 lines/function TypeScript) via check_loc.py script. Added Kubernetes manifests (namespace, deployments, services, ingress). Updated ruff ignore list to match implementation (CPY001, ANN401; removed deprecated ANN101/ANN102). Added per-file-ignores for CLI (T201), schemas (D101), tests (S101, D101-D107, ANN, PLR2004). Added coverage exclusions for CLI orchestrators and extract.py. Expanded frontend quality section with comprehensive ESLint rules from claude-devtools conventions (strict-boolean-expressions, explicit-function-return-type, max-depth 4, max-lines-per-function 90, max-lines 600). Added exactOptionalPropertyTypes, noPropertyAccessFromIndexSignature, noFallthroughCasesInSwitch to TypeScript compiler options. LOC check integrated as first gate in quality pipeline.
+- v8.1: Address adversarial review round 8 (2 MAJOR, 7 MINOR). K8s: replaced Ingress with kubectl port-forward for localhost-only access; added hostPath volume contract for results. R-08 wording clarified to reference coverage-eligible subset. LOC description corrected to physical source span (not code-only). Added test_check_loc.py for R-11 enforcement verification. Generated TS types (web/src/types/) exempted from LOC rules. Per-file-ignores prose corrected to match actual TOML (D101, D102, D103, D107 not D101-D107). "First gate" language scoped to lint-python. Implementation roadmap reconciled with actual Phase 1 deliverables.
+- v8.0: Phase 1 implementation decisions. Added LOC enforcement (600 lines/file, 60 lines/function Python, 90 lines/function TypeScript) via check_loc.py script. Added Kubernetes manifests (namespace, deployments, services, ingress). Updated ruff ignore list to match implementation (CPY001, ANN401; removed deprecated ANN101/ANN102). Added per-file-ignores for CLI (T201), schemas (D101), tests (S101, D101, D102, D103, D107, ANN, PLR2004). Added coverage exclusions for CLI orchestrators and extract.py. Expanded frontend quality section with comprehensive ESLint rules from claude-devtools conventions (strict-boolean-expressions, explicit-function-return-type, max-depth 4, max-lines-per-function 90, max-lines 600). Added exactOptionalPropertyTypes, noPropertyAccessFromIndexSignature, noFallthroughCasesInSwitch to TypeScript compiler options. LOC check integrated as first gate within lint-python.
 - v7.1: Address adversarial review round 7 CONDITIONAL PASS (0 MAJOR, 9 MINOR). Canonical genotype defined as algorithm output. Fixed 8->7 PPC metrics. Degraded response fields absent not null. Added NoRunLoadedResponse schema. Per-coordinate seed derivation. uv.lock hash in manifest. validation_summary.json schema. V=11 combination count wording. Removed data/ mount from API container.
 - v7.0: Address adversarial review round 6 (2 MAJOR, 9 MINOR). Fixed production fitting algorithm (Section 4.12) to match upstream exactly: joint scan -> A scan -> B scan per trait, convergence at 1e-6. Snapshot-first publication: copy+seal children.csv before any computation, load from snapshot only. Added validation_summary.json artifact. Defined data-endpoint 503 in degraded mode. Discriminated HealthResponse with Pydantic Field(discriminator). Optimizer seeds derive from model_id not display_name. Model_id routability + snapshot immutability tests. source_data_hash == artifacts["children.csv"] invariant.
 - v6.0: Address adversarial review round 5 (2 MAJOR, 10 MINOR). Added URL-safe model_id slugs for API routing. Included children.csv snapshot in run directories with API startup hash verification. Added production fitting algorithm subsection. Introduced discriminated HealthResponse union. Fixed crash-recovery prose, extension-point references, c-grid tolerance, signature-equivalence language, fidelity table metric name, stale current.new handling.
@@ -62,7 +63,7 @@ ATITD Citrus Genetics is a full-stack analytics platform for validating and expl
 | R-05 | Dashboard load time | Initial page load < 3s on localhost (cold browser cache, Chrome/Firefox) | Manual verification (Lighthouse optional, not CI-gated) |
 | R-06 | Type safety | Zero mypy errors under strict mode | CI job: `python-quality` |
 | R-07 | Lint cleanliness | Zero ruff violations under project's `select = ["ALL"]` configuration and documented ignore set | CI job: `python-quality` |
-| R-08 | Test coverage | >= 80% line coverage on citrus_genetics package | CI job: `python-quality` |
+| R-08 | Test coverage | >= 80% line coverage on coverage-eligible citrus_genetics modules (excludes CLI orchestrators, extract.py, and scripts/ per Section 7.4) | CI job: `python-quality` |
 | R-09 | Container health | All services (api + web) report healthy within 30s of `docker compose up --wait` | CI job: `docker-smoke` with `--wait-timeout 30` |
 | R-10 | Deterministic results | Identical floored log-scores plus identical canonical genotype representation (with deterministic tie-breaking for non-identified coordinates) given same input data, same code revision, same platform | Fast CI: `test_determinism` |
 | R-11 | LOC limits | Python: 600 lines/file, 60 lines/function. TypeScript: 600 lines/file, 90 lines/function. HTML exempt. | CI job: `python-quality` (loc-check), `web-quality` (ESLint) |
@@ -231,6 +232,8 @@ atitd-citrus-genetics/
                 test_extract.py
                 test_provenance.py
                 test_results.py
+            scripts/
+                test_check_loc.py
     web/
         package.json
         tsconfig.json
@@ -269,9 +272,8 @@ atitd-citrus-genetics/
     docker-compose.yml
     k8s/
         namespace.yaml           # citrus-genetics namespace
-        api-deployment.yaml      # API deployment + ClusterIP service
+        api-deployment.yaml      # API deployment + ClusterIP service + hostPath volume
         web-deployment.yaml      # Web deployment + ClusterIP service
-        ingress.yaml             # nginx ingress controller, host: localhost
     .editorconfig
     .importlinter
     .gitignore
@@ -760,20 +762,27 @@ server {
 }
 ```
 
-### 6.4 Kubernetes Manifests (Optional)
+### 6.4 Kubernetes Manifests (Local Development Only)
 
-For environments where Kubernetes is preferred over Docker Compose, equivalent manifests are provided in `k8s/`:
+Kubernetes manifests are provided as a **secondary** local development option. Docker Compose (Section 6.1) remains the primary deployment tool. The K8s manifests are not a production deployment path — they exist for users who prefer K8s workflows or need to test K8s-specific behavior in a local cluster (minikube, kind).
 
 | Manifest | Purpose |
 |----------|---------|
 | `namespace.yaml` | `citrus-genetics` namespace for resource isolation |
-| `api-deployment.yaml` | API deployment (1 replica) + ClusterIP service on port 8000 |
+| `api-deployment.yaml` | API deployment (1 replica) + ClusterIP service on port 8000, hostPath volume for results |
 | `web-deployment.yaml` | Web deployment (1 replica) + ClusterIP service on port 80 |
-| `ingress.yaml` | nginx ingress controller, host: `localhost`, path-based routing (`/api/` -> api service, `/` -> web service) |
 
-**Local development:** Images use `imagePullPolicy: Never` for local builds (e.g., `minikube`, `kind`). For production, update to a registry path and remove `imagePullPolicy`.
+**Results volume contract:** The API pod mounts the host's `results/` directory via a `hostPath` volume (type: `Directory`) at `/app/results` (readOnly). This mirrors the Docker Compose `./results:/app/results:ro` bind mount and preserves the same atomic-publication and immutable-snapshot guarantees (Section 9.4). The `run_all.py` orchestrator runs on the host (not in the cluster), writes to the host filesystem, and the API pod reads the published `current` symlink at startup.
 
-**Not a replacement for Docker Compose:** Docker Compose remains the primary local development tool (Section 6.1). Kubernetes manifests are provided for users who prefer K8s or need to test K8s-specific behavior.
+**Localhost-only access:** No Ingress resource is used. The CONOPS (Section 1.4) requires localhost-only, no-TLS, no-auth deployment. Kubernetes Ingress cannot guarantee loopback-only binding — it depends on the ingress controller's exposure. Instead, access is via `kubectl port-forward`:
+
+```bash
+kubectl port-forward -n citrus-genetics service/web 8080:80 --address 127.0.0.1
+```
+
+This binds exclusively to `127.0.0.1`, enforcing the same security boundary as Docker Compose's `127.0.0.1:80:80`.
+
+**Local cluster setup:** Images use `imagePullPolicy: Never` for pre-built local images (e.g., `minikube image load`, `kind load docker-image`). The hostPath volume requires the results directory to exist on the cluster node's filesystem — for minikube this means `minikube mount ./results:/host-results` or equivalent.
 
 ## 7. Code Quality Standards
 
@@ -825,7 +834,7 @@ line-ending = "lf"
 ```
 
 **Per-file-ignores rationale:**
-- **Tests:** `S101` (assert), `D101-D107` (docstrings), `ANN` (type annotations), `PLR2004` (magic values) — test code is inherently self-documenting and assertion-heavy.
+- **Tests:** `S101` (assert), `D101` (class docstring), `D102` (public method docstring), `D103` (public function docstring), `D107` (init docstring), `ANN` (type annotations), `PLR2004` (magic values) — test code is inherently self-documenting and assertion-heavy. Note: `D100` (module docstring) and `D104` (package docstring) are globally ignored; `D105` (magic method docstring) and `D106` (nested class docstring) remain active for tests.
 - **CLI scripts:** `T201` (print) — CLI output is the primary user interface for these modules.
 - **Schemas:** `D101` (class docstring) — Pydantic models with typed fields are self-documenting; docstrings would duplicate field definitions.
 
@@ -949,9 +958,9 @@ forbidden_modules = citrus_genetics.api
 
 **Python enforcement:** The `check_loc.py` script walks the `python/` directory, parses each `.py` file with the `ast` module, and reports violations for files exceeding 600 lines or functions/methods exceeding 60 lines. It runs as the **first gate** in `lint-python` (before ruff, mypy, import-linter) and is independently runnable via `make loc-check`.
 
-**TypeScript enforcement:** LOC limits for TypeScript are enforced via ESLint rules (`max-lines: 600`, `max-lines-per-function: 90`). The TypeScript function limit is 90 (not 60) because Prettier formatting expansion (trailing commas, multi-line destructuring, explicit return types) adds ~50% more lines compared to equivalent Python. This matches the convention established in claude-devtools.
+**TypeScript enforcement:** LOC limits for TypeScript are enforced via ESLint rules (`max-lines: 600`, `max-lines-per-function: 90`). The TypeScript function limit is 90 (not 60) because Prettier formatting expansion (trailing commas, multi-line destructuring, explicit return types) adds ~50% more lines compared to equivalent Python. This matches the convention established in claude-devtools. **Generated types are exempt:** The `web/src/types/` directory (generated by `openapi-typescript`, not hand-edited) is excluded from ESLint LOC rules via the ESLint config's `ignores` array. Generated type files may legitimately exceed 600 lines as the API surface grows.
 
-**Why AST-based, not line-counting:** Raw line counting conflates code, comments, and blank lines. AST-based function measurement counts only the function body span (`end_lineno - lineno + 1`), giving an accurate measure of function complexity regardless of comment density.
+**Why AST-based, not line-counting:** The AST identifies function boundaries precisely (`FunctionDef.lineno` through `FunctionDef.end_lineno`). The measured span is the physical source range from `def` to the last line of the function body, inclusive of internal comments and blank lines. This is intentional — a function with many internal comments is still a large function that should be refactored. Decorators are not included in the span (they precede `FunctionDef.lineno`). Nested functions are measured independently as separate `FunctionDef` nodes.
 
 ### 7.7 Frontend Quality
 
@@ -1379,7 +1388,7 @@ Only `run_all.py` publishes to `results/current`. It is the single authoritative
 | R-08 | pytest-cov exit code | — |
 | R-09 | docker-smoke compose exit code | — |
 | R-10 | `test_determinism` (frozen fixture) | `test_determinism_full` |
-| R-11 | `check_loc.py` + ESLint `max-lines` rules | — |
+| R-11 | `test_check_loc.py` + `check_loc.py` gate + ESLint `max-lines` rules | — |
 
 ## 12. Risk Register
 
@@ -1463,27 +1472,28 @@ User-defined model specifications cannot be served via the current read-only API
 
 ## 15. Implementation Roadmap
 
-### Phase 1: Project Restructuring + CI (COMPLETE)
+### Phase 1: Project Restructuring + Python Quality Gate (COMPLETE)
 - Restructured flat scripts into `citrus_genetics` package with cli/ orchestration layer
 - Set up pyproject.toml with all quality tooling (ruff ALL, mypy strict, pytest 80% coverage, import-linter 6 contracts)
 - Created Makefile with all Python targets (Section 8.1)
 - Wrote core unit tests (77 tests, 83% coverage, < 30s)
 - LOC enforcement via `check_loc.py` (600 lines/file, 60 lines/function)
-- Docker + Docker Compose + Kubernetes manifests
-- Pass `make quality` with zero violations (ruff, mypy, import-linter, LOC, pytest)
+- FastAPI server with Pydantic schemas, API tests, artifact-loading tests
+- Docker + Docker Compose configs, Kubernetes manifests (local-dev only)
+- Pass `make lint-python && make test-python` with zero violations
 
-### Phase 2: API + Docker
-- Implement FastAPI server with Pydantic schemas (Section 5.2)
-- Generate and commit openapi.json
-- Write API + artifact-loading tests
-- Dockerfiles, docker-compose (Section 6.1), nginx config
+### Phase 2: Docker Integration + CI
+- Validate Docker images build and compose stack passes healthchecks
+- Generate and commit openapi.json, add schema-drift CI check
 - **Add `docker-smoke` CI job**
+- **Add `python-quality` GitHub Actions job**
 
 ### Phase 3: React Dashboard
 - Scaffold React + TypeScript + Vite
 - Generate TS types from openapi.json at build time (not committed)
 - Model comparison, litter explorer, plug-in predictive check charts
 - **Add `web-quality` CI job (lint + format-check + test)**
+- `make quality` (Python + web) becomes the full gate
 
 ### Phase 4: Validation Suite + Release Gates
 - Implement run provenance with atomic publication (Section 9.4)
