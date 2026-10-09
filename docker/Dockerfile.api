@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+# Target: < 200 MB. No dev dependencies installed.
+
+FROM python:3.12-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+WORKDIR /app
+
+# Copy only the files needed to install the package and its dependencies.
+# pyproject.toml and uv.lock must be present for a reproducible install.
+COPY pyproject.toml uv.lock ./
+COPY python/ ./python/
+
+# Install the package and its runtime dependencies only.
+# --no-dev excludes dev dependency-groups (ruff, mypy, pytest, etc.).
+# --no-cache avoids writing a uv cache layer.
+# UV_PYTHON_DOWNLOADS=never prevents uv from downloading another Python interpreter.
+RUN UV_PYTHON_DOWNLOADS=never uv sync --no-dev --no-cache
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 --start-period=10s \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"
+
+# Mount point for results volume (read-only at runtime via docker-compose).
+# The API reads run snapshots from /app/results/current/.
+VOLUME ["/app/results"]
+
+CMD [".venv/bin/uvicorn", "citrus_genetics.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

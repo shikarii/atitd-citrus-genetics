@@ -1,0 +1,105 @@
+[project]
+name = "citrus-genetics"
+version = "1.0.0"
+description = "Statistical model validation and breeding analytics for ATITD citrus tree genetics"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.12",
+    "pyarrow>=14.0",
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "pydantic>=2.9",
+    "openpyxl>=3.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "import-linter>=2.1",
+    "httpx>=0.27",
+    "pandas-stubs>=2.1",
+    "types-openpyxl>=3.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["python/citrus_genetics"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["python"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D100",     # missing module docstring (enforced selectively)
+    "D104",     # missing package docstring
+    "D203",     # one-blank-line-before-class (conflicts with D211)
+    "D213",     # multi-line-summary-second-line (conflicts with D212)
+    "COM812",   # trailing comma (conflicts with formatter)
+    "ISC001",   # implicit string concat (conflicts with formatter)
+    "CPY001",   # missing copyright notice (not applicable)
+    "ANN401",   # Any type (legitimate for model spec dicts)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"python/tests/**/*.py" = ["S101", "D101", "D102", "D103", "D107", "ANN", "PLR2004"]
+"python/citrus_genetics/cli/**/*.py" = ["T201"]  # print is expected in CLI scripts
+"python/citrus_genetics/schemas/**/*.py" = ["D101"]  # Pydantic models are self-documenting
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-branches = 12
+max-returns = 6
+max-statements = 50
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+show_error_codes = true
+pretty = true
+plugins = ["pydantic.mypy"]
+mypy_path = "python"
+packages = ["citrus_genetics"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+addopts = "-ra -q --cov=citrus_genetics --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=80"
+testpaths = ["python/tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["citrus_genetics"]
+omit = [
+    "*/cli/*",          # thin orchestrators tested via integration
+    "*/io/extract.py",  # requires real Excel files, tested via integration
+    "*/scripts/*",      # quality enforcement tools, not library code
+]
+
+[tool.importlinter]
+root_packages = ["citrus_genetics"]

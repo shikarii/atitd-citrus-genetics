@@ -1,0 +1,61 @@
+[importlinter]
+root_packages =
+    citrus_genetics
+root_package_install_path = python
+
+[importlinter:contract:core_purity]
+name = core must not depend on any other layer
+type = forbidden
+source_modules =
+    citrus_genetics.core
+forbidden_modules =
+    citrus_genetics.api
+    citrus_genetics.io
+    citrus_genetics.schemas
+    citrus_genetics.pipelines
+    citrus_genetics.cli
+
+[importlinter:contract:pipeline_purity]
+name = pipelines must not depend on API, IO, or CLI
+type = forbidden
+source_modules =
+    citrus_genetics.pipelines
+forbidden_modules =
+    citrus_genetics.api
+    citrus_genetics.io
+    citrus_genetics.cli
+
+[importlinter:contract:schema_purity]
+name = schemas must not depend on API, IO, or CLI
+type = forbidden
+source_modules =
+    citrus_genetics.schemas
+forbidden_modules =
+    citrus_genetics.api
+    citrus_genetics.io
+    citrus_genetics.cli
+
+[importlinter:contract:io_purity]
+name = IO must not depend on API or CLI
+type = forbidden
+source_modules =
+    citrus_genetics.io
+forbidden_modules =
+    citrus_genetics.api
+    citrus_genetics.cli
+
+[importlinter:contract:api_no_cli]
+name = API must not import CLI
+type = forbidden
+source_modules =
+    citrus_genetics.api
+forbidden_modules =
+    citrus_genetics.cli
+
+[importlinter:contract:cli_no_api]
+name = CLI must not import API
+type = forbidden
+source_modules =
+    citrus_genetics.cli
+forbidden_modules =
+    citrus_genetics.api
