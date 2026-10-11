@@ -81,7 +81,8 @@ ATITD Citrus Genetics is a full-stack analytics platform for validating and expl
 **Alternatives considered:**
 - **Julia** — Superior numerical performance but introduces a language boundary and deployment complexity for a web-served application.
 - **R** — Natural for statistical modeling but poor web serving story and weaker type checking ecosystem.
-- **Rust (PyO3)** — Overkill for this dataset size (692 records, ~20 min full fit). Reserve for future hot-path optimization if dataset grows 100x+.
+- **Rust (PyO3)** — Clean FFI but less mature CUDA ecosystem than C++.
+- **C++20 (pybind11)** — Selected for hot-path acceleration (Section 18). The core `loglik()` chain is called ~13M times during a full pipeline run; C++ with AVX2 intrinsics and optional CUDA kernels provide 50-200x speedup while keeping the Python orchestration layer intact.
 
 ### 2.2 Package Manager: uv
 
@@ -121,6 +122,8 @@ Vite for fast dev builds. HashRouter for SPA routing compatibility with static h
 | pandas | >= 2.1 | DataFrame I/O, groupby operations, CSV/Parquet handling |
 | scipy | >= 1.12 | Statistical distributions (future: hypothesis tests, confidence intervals) |
 | pyarrow | >= 14.0 | Parquet read/write for efficient data serialization |
+| pybind11 | >= 2.12 | C++/Python bindings for native acceleration layer (Section 18) |
+| CUDA Toolkit | >= 11.8 | Optional GPU acceleration for batch gene-pair scanning |
 
 ## 3. Domain Architecture
 
@@ -1108,6 +1111,9 @@ Python and web quality gates are independently runnable. The aggregate `make qua
 | `docker-up` | Start all services with `--wait --wait-timeout 30` | docker |
 | `docker-down` | Stop all services | docker |
 | `clean` | Remove build artifacts and caches | - |
+| `build-native` | Build C++/CUDA extension via CMake | CMake, pybind11 |
+| `clean-native` | Remove native build artifacts | - |
+| `bench-native` | Benchmark native vs Python performance | uv, native extension |
 
 ### 8.2 CI/CD (GitHub Actions — Target Architecture)
 
@@ -1496,6 +1502,9 @@ User-defined model specifications cannot be served via the current read-only API
 | vite | >= 6.0 | Build tool | package-lock.json |
 | openapi-typescript | >= 7.0 | TS type generation | package-lock.json |
 | nginx | alpine | Reverse proxy | Dockerfile |
+| pybind11 | >= 2.12 | C++/Python bindings (native) | CMakeLists.txt |
+| CMake | >= 3.18 | Native extension build system | system |
+| CUDA Toolkit | >= 11.8 | GPU acceleration (optional) | system |
 
 This table lists primary dependencies. Additional libraries (Recharts, TanStack Table/Query, ESLint, Prettier, Vitest, vite-plugin-compression) are pinned in `package-lock.json`; `uv.lock` is the exhaustive Python dependency inventory.
 
@@ -1542,6 +1551,24 @@ This table lists primary dependencies. Additional libraries (Recharts, TanStack 
 - Leave-one-litter-out CV
 - Additional statistical tests
 - Historical dataset comparison
+
+### Phase 6: Native Acceleration
+
+#### Phase 6a: C++ Core (Tier 0)
+- `trait_rows`, `child_lik`, `loglik` in C++20 with AVX2 intrinsics
+- pybind11 bindings with transparent fallback dispatch via `_native.py`
+- Numerical equivalence test suite (tolerance: loglik < 1e-9)
+- CMake build integrated into Makefile (`build-native` target)
+
+#### Phase 6b: Fused Scan (Tier 1)
+- `_scan_parent` fused C++ implementation (trait_rows -> index -> multiply -> log -> sum in one pass)
+- Fixed-trait column caching eliminates redundant computation
+- Benchmark script comparing Python vs C++ (`bench-native` target)
+
+#### Phase 6c: CUDA Kernels (Tier 2)
+- `scan_parent_batch` CUDA kernel (all candidate gene pairs evaluated in parallel)
+- `trait_rows_batch` CUDA kernel (batched probability tables via shared memory)
+- Runtime GPU detection and automatic fallback to C++ (AVX2)
 
 ## 16. Web Dashboard Architecture
 
@@ -1591,6 +1618,141 @@ Python pipeline. New analysis data requires a local pipeline run + export + comm
 | plotly.js white page crash | Fixed | Switched to `plotly.js-dist-min` browser bundle. Root cause: Vite externalized Node.js builtins as empty stubs. |
 | Empty chart pages | Fixed | Added NoData component with loading states. Pages show "Data Not Available" instead of empty charts when JSON files are missing. |
 | Graph styling inconsistency | Fixed | All 10 chart pages updated with academic styling: named color constants, hover templates, reference line annotations, consistent marker borders, proper axis standoffs, and legend positioning. |
+
+## 18. Native Acceleration Layer
+
+### 18.1 Purpose
+
+C++20/CUDA extension providing hardware-accelerated implementations of the
+compute-intensive model fitting primitives. The extension is optional: all
+functionality remains available in pure Python when the extension is not built.
+
+### 18.2 Architecture
+
+The native layer sits below `core/model.py` in the dependency hierarchy:
+
+```
+model.py  -->  _native.py  -->  _citrus_native.{so,pyd}
+                  ^                    ^
+           Python shim            pybind11 C++20/CUDA
+           (try/except             compiled extension
+            fallback)
+```
+
+`_native.py` provides fallback dispatch: if the compiled extension is
+importable, it is used; otherwise, the pure Python implementations in
+`model.py` are called. No other module in the package imports the native
+extension directly.
+
+Import-linter contract: `_citrus_native` is a compiled extension inside
+`citrus_genetics.core` and inherits core_purity constraints (no dependency
+on api, io, schemas, pipelines, or cli).
+
+### 18.3 Accelerated Functions
+
+| Function | Python (model.py) | C++ (AVX2) | CUDA | Tier |
+|----------|-------------------|------------|------|------|
+| `trait_rows` | Lines 71-108 | Yes (scatter-add + SIMD display) | Yes (shared memory) | 0 |
+| `child_lik` | Lines 202-237 | Yes (fused, no temp arrays) | Via `scan_parent` | 0 |
+| `loglik` | Lines 251-265 | Yes (fused with `child_lik`) | Via `scan_parent` | 0 |
+| `_scan_parent` | Lines 267-301 | Yes (fused pipeline, fixed-trait caching) | Yes (parallel candidates) | 1 |
+| `LitterFit.fit` | Lines 341-365 | Yes (full coordinate ascent) | Yes (scan dispatch) | 2 |
+
+### 18.4 Numerical Equivalence
+
+The native extension must produce results within the following tolerances
+of the pure Python implementation:
+
+| Function | Tolerance | Verification |
+|----------|-----------|-------------|
+| `trait_rows` | Element-wise < 1e-14 | `test_native.py` |
+| `loglik` | Absolute < 1e-9 | `test_native.py` |
+| `fit` (final loglik) | Absolute < 1e-6 | `test_native.py` |
+| `fit` (gene pairs) | Exact match | `test_native.py` |
+
+Differences arise only from operation reordering (associativity of
+floating-point addition). Both paths use IEEE 754 double precision.
+
+### 18.5 Hardware Targets
+
+**CPU:** Intel i7-6700K (Skylake). ISA extensions used:
+- AVX2 (256-bit integer SIMD)
+- FMA3 (fused multiply-add)
+- SSE4.2 (string/comparison intrinsics)
+- No AVX-512 (not available on Skylake desktop)
+
+**GPU:** Optional CUDA device. Minimum compute capability 5.0 (Maxwell).
+Runtime detection via `cudaGetDeviceCount()`; graceful fallback to CPU
+if no device found or CUDA toolkit not installed at build time.
+
+### 18.6 Build
+
+CMake 3.18+ with optional CUDA language support. Built separately from
+the Python wheel via `make build-native`. The compiled extension is
+placed in `python/citrus_genetics/core/` for import.
+
+Build prerequisites:
+- C++20 compiler (MSVC 19.29+, GCC 11+, Clang 13+)
+- pybind11 >= 2.12
+- Python 3.12+ development headers
+- (Optional) CUDA Toolkit 11.8+ for GPU support
+
+### 18.7 Fallback Behavior
+
+| Scenario | Behavior |
+|----------|----------|
+| Extension not built | Pure Python, no performance degradation |
+| Extension built, no CUDA | C++ with AVX2 |
+| Extension built, CUDA available | C++ with CUDA for scan operations |
+| CUDA runtime error | Automatic fallback to C++ (AVX2) |
+
+Fallback is logged at import time via `logging.info()`.
+
+### 18.8 Performance Targets
+
+| Pipeline | Python (current) | C++ Tier 0-1 | CUDA Tier 2 |
+|----------|------------------|--------------|-------------|
+| `run-all-fast` | ~20 min | ~2 min | ~30 sec |
+| `run-all` | ~2 hours | ~10 min | ~2 min |
+| `profile.py` | ~10 hours | ~30 min | ~3 min |
+
+Targets based on operation count analysis (~13.1M `loglik()` calls for
+full run, ~15.7B primitive operations). Actual performance depends on
+hardware and memory bandwidth.
+
+### 18.9 Directory Layout
+
+```
+native/
+    CMakeLists.txt
+    include/citrus/
+        model.h              Core data structures
+        avx2.h               AVX2 intrinsic implementations
+        kernels.h            CUDA kernel declarations
+        dispatch.h           Runtime CPU/GPU dispatch
+    src/
+        model.cpp            C++ core implementations
+        avx2.cpp             AVX2 optimized paths
+        dispatch.cpp         Runtime detection
+        bindings.cpp         pybind11 module definition
+    cuda/
+        trait_rows.cu        Batched probability table kernel
+        scan_parent.cu       Parallel gene-pair scanning kernel
+        loglik.cu            Log-likelihood reduction kernel
+    tests/
+        test_model.cpp       C++ unit tests
+        test_avx2.cpp        AVX2 correctness tests
+```
+
+### 18.10 Risk Register
+
+| ID | Risk | Impact | Mitigation |
+|----|------|--------|------------|
+| R-N1 | FP divergence between Python and C++ | Wrong gene fits | Strict tolerance tests; identical operation order where possible |
+| R-N2 | CUDA driver version incompatibility | Extension fails to load | Runtime fallback to CPU; test on multiple CUDA versions |
+| R-N3 | AVX2 not available on user CPU | Extension crash | CPUID check at import; scalar fallback path |
+| R-N4 | Build complexity deters contributors | Reduced dev velocity | Pure Python always works; native build is optional |
+| R-N5 | MSVC/GCC codegen differences | Platform-specific bugs | CI tests on Windows (MSVC) and Linux (GCC) |
 
 ## 17. Related Documents
 

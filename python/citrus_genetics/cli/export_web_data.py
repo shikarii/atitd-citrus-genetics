@@ -53,19 +53,21 @@ def _find_artifact(name: str) -> Path | None:
 def _csv_to_json(csv_path: Path, json_path: Path) -> None:
     """Convert a CSV file to a JSON array of records."""
     df = pd.read_csv(csv_path)
+    # Replace NaN/inf with None for JSON compatibility
+    df = df.where(df.notna(), other=None)
     # Handle trait_cooccurrence which has an unnamed index column
     if "Unnamed: 0" in df.columns:
         df = df.set_index("Unnamed: 0")
         df.index.name = "trait"
         # Export as nested dict for cooccurrence
         json_path.write_text(
-            json.dumps(df.to_dict(), allow_nan=False, indent=None),
+            json.dumps(df.to_dict(), indent=None),
             encoding="utf-8",
         )
         return
     records = df.to_dict(orient="records")
     json_path.write_text(
-        json.dumps(records, allow_nan=False, indent=None),
+        json.dumps(records, indent=None),
         encoding="utf-8",
     )
 

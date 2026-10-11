@@ -56,6 +56,23 @@ export function Landing() {
           using maximum likelihood estimation across 30 competing inheritance models
           to identify the true breeding mechanic from 692 observed offspring across 14 litters.
         </p>
+        <div className="text-sm text-slate-500 mb-4">
+          <span className="font-medium text-slate-700">Shikari</span>
+          {" and "}
+          <span className="font-medium text-slate-700">Catote</span>
+          <span className="mx-2 text-slate-300">|</span>
+          <span>
+            With data contributions from{" "}
+            <a
+              href="https://atitd.wiki/tale11/Guides/Indonesian_Beehives#Estimated_Ideal_Values"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-teal-600 hover:text-teal-700 underline underline-offset-2"
+            >
+              ATITD Wiki contributors
+            </a>
+          </span>
+        </div>
         <div className="flex gap-3">
           <Link
             to="/methods"
