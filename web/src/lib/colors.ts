@@ -46,7 +46,7 @@ export const CHART_COLORS = [
   SLATE[500],
 ] as const;
 
-import type { Layout as PlotlyLayout, Config } from "plotly.js";
+import type { Layout as PlotlyLayout, Config } from "plotly.js-dist-min";
 
 /** Plotly layout defaults for consistent styling. */
 export const PLOTLY_LAYOUT: Partial<PlotlyLayout> = {
