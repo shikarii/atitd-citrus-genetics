@@ -40,6 +40,9 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 
+# Generated reports
+report.html
+
 # Claude
 .claude/
 CLAUDE.md
