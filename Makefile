@@ -1,6 +1,7 @@
 .PHONY: sync format-python format-check-python lint-python loc-check test-python \
        format format-check lint test quality openapi \
        run-all run-all-fast run-compare run-simchecks dashboard \
+       export-data build-web deploy \
        docker-build docker-up docker-down clean
 
 # Python-only targets
@@ -56,6 +57,15 @@ run-simchecks:
 # Dashboard
 dashboard:
 	uv run streamlit run python/citrus_genetics/dashboard/app.py
+
+# Web dashboard
+export-data:
+	uv run python -m citrus_genetics.cli.export_web_data
+
+build-web: export-data
+	cd web && npm install && npm run build
+
+deploy: run-all-fast build-web
 
 # Docker targets
 docker-build:

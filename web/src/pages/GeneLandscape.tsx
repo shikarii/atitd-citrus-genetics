@@ -1,0 +1,149 @@
+import { useEffect, useState, useMemo } from "react";
+import { MetricCard } from "../components/MetricCard";
+import { ChartCard } from "../components/ChartCard";
+import { PlotlyChart } from "../components/PlotlyChart";
+import { DataTable } from "../components/DataTable";
+import { loadFittedGenes, type FittedGenes, TRAITS } from "../lib/data";
+import { CHART_COLORS } from "../lib/colors";
+import type { ColumnDef } from "@tanstack/react-table";
+
+interface GenePoint {
+  litter: string;
+  parent: string;
+  trait: string;
+  g1: number;
+  g2: number;
+}
+
+export function GeneLandscape() {
+  const [data, setData] = useState<FittedGenes[]>([]);
+
+  useEffect(() => {
+    loadFittedGenes().then(setData).catch(() => {});
+  }, []);
+
+  const genePoints = useMemo(() => {
+    const points: GenePoint[] = [];
+    data.forEach((row) => {
+      for (const parent of ["A", "B"]) {
+        for (const trait of TRAITS) {
+          const key = `${parent}_${trait}_genes`;
+          const val = String(row[key] ?? "");
+          const match = val.match(/(\d+)\s*[,/]\s*(\d+)/);
+          if (match) {
+            points.push({
+              litter: row.litter,
+              parent: `Parent ${parent}`,
+              trait,
+              g1: parseInt(match[1]!),
+              g2: parseInt(match[2]!),
+            });
+          }
+        }
+      }
+    });
+    return points;
+  }, [data]);
+
+  const meanLL = data.length > 0
+    ? data.reduce((s, d) => s + d.loglik, 0) / data.length
+    : 0;
+  const meanClone = data.length > 0
+    ? data.reduce((s, d) => s + d.clone_share, 0) / data.length
+    : 0;
+
+  const tableColumns: ColumnDef<FittedGenes, unknown>[] = [
+    { accessorKey: "litter", header: "Litter" },
+    { accessorKey: "loglik", header: "Log-Lik", cell: (info) => (info.getValue() as number).toFixed(1) },
+    { accessorKey: "clone_share", header: "Clone Share", cell: (info) => (info.getValue() as number).toFixed(3) },
+    ...TRAITS.flatMap((t) => [
+      { accessorKey: `A_${t}_genes`, header: `A ${t}` } as ColumnDef<FittedGenes, unknown>,
+      { accessorKey: `B_${t}_genes`, header: `B ${t}` } as ColumnDef<FittedGenes, unknown>,
+    ]),
+  ];
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-slate-800 mb-1">Gene Landscape</h1>
+      <p className="text-sm text-slate-500 mb-6">
+        MLE-fitted hidden gene pairs (g1, g2) for each parent and trait.
+        Points along the diagonal indicate both genes have similar values.
+      </p>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <MetricCard label="Litters Fitted" value={data.length || "..."} />
+        <MetricCard label="Gene Points" value={genePoints.length || "..."} detail="2 parents x 4 traits x N litters" />
+        <MetricCard label="Mean Log-Lik" value={meanLL.toFixed(1)} />
+        <MetricCard label="Mean Clone Share" value={meanClone.toFixed(4)} />
+      </div>
+
+      <div className="space-y-6">
+        {TRAITS.map((trait, ti) => {
+          const traitPoints = genePoints.filter((p) => p.trait === trait);
+          const aPoints = traitPoints.filter((p) => p.parent === "Parent A");
+          const bPoints = traitPoints.filter((p) => p.parent === "Parent B");
+
+          return (
+            <ChartCard
+              key={trait}
+              title={`Gene Pairs: ${trait}`}
+              subtitle="g1 vs g2 for each parent; diagonal = homozygous-like"
+            >
+              <PlotlyChart
+                data={[
+                  {
+                    x: aPoints.map((p) => p.g1),
+                    y: aPoints.map((p) => p.g2),
+                    text: aPoints.map((p) => p.litter),
+                    mode: "text+markers" as const,
+                    type: "scatter",
+                    name: "Parent A",
+                    textposition: "top right" as const,
+                    textfont: { size: 9 },
+                    marker: { size: 10, color: CHART_COLORS[ti * 2] },
+                    hovertemplate: "%{text}<br>g1: %{x}<br>g2: %{y}<extra>Parent A</extra>",
+                  },
+                  {
+                    x: bPoints.map((p) => p.g1),
+                    y: bPoints.map((p) => p.g2),
+                    text: bPoints.map((p) => p.litter),
+                    mode: "text+markers" as const,
+                    type: "scatter",
+                    name: "Parent B",
+                    textposition: "top right" as const,
+                    textfont: { size: 9 },
+                    marker: { size: 10, color: CHART_COLORS[ti * 2 + 1], symbol: "diamond" },
+                    hovertemplate: "%{text}<br>g1: %{x}<br>g2: %{y}<extra>Parent B</extra>",
+                  },
+                  {
+                    x: [0, 1000],
+                    y: [0, 1000],
+                    mode: "lines" as const,
+                    type: "scatter",
+                    name: "Diagonal",
+                    line: { dash: "dash", color: "#CBD5E1", width: 1 },
+                    showlegend: false,
+                  },
+                ]}
+                layout={{
+                  height: 400,
+                  xaxis: { title: { text: "Gene 1" }, range: [0, 1000] },
+                  yaxis: { title: { text: "Gene 2" }, range: [0, 1000] },
+                }}
+              />
+            </ChartCard>
+          );
+        })}
+
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800 mb-3">Fitted Gene Values</h2>
+          <DataTable
+            data={data as unknown as Record<string, unknown>[]}
+            columns={tableColumns as ColumnDef<Record<string, unknown>, unknown>[]}
+            downloadFilename="fitted_genes.csv"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
