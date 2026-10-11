@@ -83,10 +83,10 @@ of it has been confirmed by the game developers or source code inspection.
 | Claim | Summary | Confidence |
 |---|---|---|
 | C1 | Each tree has 8 hidden gene values (2 per trait), integers 0-1000 | Medium -- within the hidden-gene family, 1-gene is catastrophically bad and 2-gene fits well, but 3+ genes and zero-hidden-state architectures (Model P) are untested |
-| C2 | Color = mean(g1, g2) with round-half-up | High *within current architecture* -- alternatives score 600-900 worse, but conditional on C1/C6/C7 being correct |
-| C3 | Sweet = min(g1, g2) | High *within current architecture* -- mean and g1 alternatives score 640-930 worse, conditional on C1/C6/C7 |
-| C4 | Size = max(g1, g2) | High *within current architecture* -- alternatives score 540-970 worse, conditional on C1/C6/C7 |
-| C5 | Length = g1 only (g2 unobservable) | Medium -- min/max alternatives gain 59, within noise |
+| C2 | Color $= \text{mean}(g_1, g_2)$ with round-half-up | High *within current architecture* -- alternatives score 600-900 worse, but conditional on C1/C6/C7 being correct |
+| C3 | Sweet $= \min(g_1, g_2)$ | High *within current architecture* -- mean and $g_1$ alternatives score 640-930 worse, conditional on C1/C6/C7 |
+| C4 | Size $= \max(g_1, g_2)$ | High *within current architecture* -- alternatives score 540-970 worse, conditional on C1/C6/C7 |
+| C5 | Length $= g_1$ only ($g_2$ unobservable) | Medium -- min/max alternatives gain 59, within noise |
 | C6 | Inheritance: fair coin flip per gene slot, slot-preserving | Medium -- untested alternatives exist |
 | C7 | Sparse gene-mutation process favored over independent-per-gene alternatives | High for rejecting independent per-gene mutation at tested rates. Does not establish exact mutation count; 0-mutation events, rare 2-mutation events, and phenotypically invisible multi-gene changes remain unresolved. Visible trait changes confound recombination with mutation |
 | C8 | Nudge: uniform distribution on integers -150 to +150 | Medium -- triangular is 86 worse, but Gaussian/Laplacian untested |
@@ -104,17 +104,11 @@ limiting cases obtained by setting hidden-gene parameters to zero.
 
 ### 1.4 Provenance Chain
 
-```
-Game source code  (unknown, unobservable)
-       |
-       v
-Player observations  (breeding logs, manual recording)
-       |
-       v
-Wiki documentation  (community synthesis, Tale 11 era)
-       |
-       v
-Our formalized model  (precise mathematical encoding)
+```mermaid
+graph TD
+    A["Game source code<br/><em>unknown, unobservable</em>"] --> B["Player observations<br/><em>breeding logs, manual recording</em>"]
+    B --> C["Wiki documentation<br/><em>community synthesis, Tale 11 era</em>"]
+    C --> D["Our formalized model<br/><em>precise mathematical encoding</em>"]
 ```
 
 Each link introduces potential errors. Player observations may have recording
@@ -193,7 +187,7 @@ Notable structure:
 **Ascertainment warning**: It is not established whether the 692 children
 are complete offspring sequences or a selected subset. If players
 disproportionately recorded interesting species, successful crosses, or
-unusual children, then P(recorded | child outcome) is not constant. Every
+unusual children, then $P(\text{recorded} \mid \text{child outcome})$ is not constant. Every
 inferred offspring frequency, mutation rate, clone fraction, and
 distributional test can be biased by outcome-dependent recording. A Tier 0
 audit should determine: whether child IDs are consecutive, whether raw logs
@@ -221,7 +215,7 @@ CLAIM = {
 The fitting engine (`core/model.py:LitterFit`) takes a model spec and a
 litter of children, then finds the hidden gene values that maximize the
 floored log-score via coordinate ascent. The clone fraction is fitted per
-litter via 121-point grid search over c in {0.0, 0.005, ..., 0.600}.
+litter via 121-point grid search over $c \in \{0.0, 0.005, \ldots, 0.600\}$.
 
 ### 2.3 The 30-Model Comparison
 
@@ -230,8 +224,8 @@ rivals vary one axis at a time from the CLAIM spec:
 
 | Axis | Variants | Count |
 |---|---|---|
-| Nudge range | R in {100, 125, 140, 160, 175, 200} | 6 |
-| Nudge shape | Triangular, R in {150, 200, 250} | 3 |
+| Nudge range | $R \in \{100, 125, 140, 160, 175, 200\}$ | 6 |
+| Nudge shape | Triangular, $R \in \{150, 200, 250\}$ | 3 |
 | Nudge mechanism | Independent, p in {0.08, 0.11, 0.14, 0.17, 0.20} | 5 |
 | Gene count | 1 latent value per trait (single hidden gene) | 1 |
 | Display rules | Each trait tested with each alternative rule | 12 |
@@ -248,9 +242,9 @@ For each model and each litter independently:
    a time while holding others fixed
 3. Scan order: joint (both parents), then parent A alone, then parent B alone
 4. Clone fraction: grid search over 121 values of c
-5. Convergence: stop when per-round floored log-score improvement < 1e-6 or
+5. Convergence: stop when per-round floored log-score improvement $< 10^{-6}$ or
    after 8 rounds
-6. Floored scoring: any child with raw probability < 1e-15 is scored at 1e-15
+6. Floored scoring: any child with raw probability $< 10^{-15}$ is scored at $10^{-15}$
    (not a proper likelihood -- a heuristic floor)
 
 **Field-name convention**: The implementation uses field names `fit_ll` and
@@ -286,10 +280,10 @@ for the full results table.
   simulation-calibrated before use.) Alternative
   validation strategies: cross-litter transfer for shared parents, whole-
   family holdout, or prospective prediction on newly collected data.
-- Length display rule (g1 vs min/max) cannot be distinguished by fit alone.
+- Length display rule ($g_1$ vs min/max) cannot be distinguished by fit alone.
 - Hidden genes are often only bounded, not exactly identified. The 68%
   exact-recovery figure is meaningful only for structurally identifiable
-  genes. For non-identifiable parameters (e.g. Length g2, or the split of
+  genes. For non-identifiable parameters (e.g. Length $g_2$, or the split of
   Color genes whose sum is constrained), recovery should be reported on
   observational-equivalence classes, not exact coordinates.
 - Hive1b shows a 34% clone component; no other litter does.
@@ -334,7 +328,7 @@ approach and how each could be wrong.
 
 **A1: Hidden-state dimensionality is unresolved.** Within the hidden-gene
 model family tested so far, a one-latent-value-per-trait model fits
-catastrophically worse than the two-gene CLAIM architecture (fit_ll = -10487,
+catastrophically worse than the two-gene CLAIM architecture ($\text{fit\_ll} = -10487$,
 169 impossible children), so one hidden value per trait is inadequate
 *conditional on a hidden-gene architecture*. This does not establish that
 hidden genes exist at all: Model P and other phenotype-only architectures
@@ -355,8 +349,8 @@ still integers).
 **A3: Slot-preserving inheritance.** The model assumes child gene slot 1
 always comes from a parent's gene slot 1. If inheritance allows slot swapping
 (child slot 1 can come from parent's slot 2), the identifiability structure
-changes. For min/max display rules, swapping g1 and g2 can produce
-observationally different offspring distributions (because nudging g1 vs g2
+changes. For min/max display rules, swapping $g_1$ and $g_2$ can produce
+observationally different offspring distributions (because nudging $g_1$ vs $g_2$
 has different effects on the displayed value). For the mean rule, slot
 swapping is observationally equivalent (mean is symmetric). This is partially
 testable but has not been tested.
@@ -403,14 +397,14 @@ shapes.
 trait's display rule per rival. No model tests combinations of non-standard
 rules (e.g. what if both Sweet and Size use mean?). If two display rules are
 wrong, no single-swap rival will score well, and the error will be invisible.
-There are 4^4 - 1 = 255 non-CLAIM display rule combinations; only 12 are
+There are $4^4 - 1 = 255$ non-CLAIM display rule combinations; only 12 are
 tested.
 
 **A8: Clamping at 0 and 1000.** After mutation, genes exceeding [0, 1000] are
 clamped. Alternatives: wrapping (1050 becomes 50) or reflecting (1050 becomes
 950). This matters only for genes near the boundaries. With R=150, a gene at
-value 900 has a ~16.6% chance of exceeding the upper boundary (50/301 for
-integer-uniform nudge in {-150, ..., +150}). Wrapping vs clamping
+value 900 has a ~16.6% chance of exceeding the upper boundary ($\frac{50}{301}$ for
+integer-uniform nudge in $\{-150, \ldots, +150\}$). Wrapping vs clamping
 would produce different offspring distributions for extreme-valued parents.
 Not tested.
 
@@ -438,17 +432,17 @@ within a litter.
 **M1: Maximum floored score is the right criterion.** The current fitting
 maximizes a floored score (not a proper likelihood). It selects the model
 that assigns highest probability to observed data *at the best-fit hidden
-genes*, with impossible children scored at 1e-15.
+genes*, with impossible children scored at $10^{-15}$.
 This conflates model adequacy with parameter estimation quality. A model with
 more flexible hidden-gene structure gets penalized less by poor estimation.
 The cv_ll vs fit_ll discrepancy (INDEP wins cv_ll, CLAIM wins fit_ll) is a
 direct manifestation of this problem.
 
 **M2: The floor hides information and there is no observation-error model.**
-Children scored at the 1e-15 floor are the strongest evidence against a
+Children scored at the $10^{-15}$ floor are the strongest evidence against a
 model. Under the uniform +/-140 model, 15 children are impossible; under
 +/-125, 30 are impossible. But the floor compresses their signal to a fixed
--34.5 per child penalty regardless of *how* impossible they are.
+$-34.5$ per child penalty regardless of *how* impossible they are.
 
 More fundamentally, every recorded trait value is treated as exact ground
 truth. One transcription error can look exactly like a rare mechanism and
@@ -457,8 +451,7 @@ disproportionately affect a model whose probabilities are very small.
 Fix: replace the floor with a proper contamination/observation-error
 likelihood. The general form is:
 
-P_obs(child | parents, model) = (1 - epsilon) * P_game(child | parents,
-model) + epsilon * P_error(child)
+$$P_{\text{obs}}(\text{child} \mid \text{parents}, \text{model}) = (1 - \epsilon) \cdot P_{\text{game}}(\text{child} \mid \text{parents}, \text{model}) + \epsilon \cdot P_{\text{error}}(\text{child})$$
 
 This requires specifying three things before it can be used:
 
@@ -474,14 +467,14 @@ This requires specifying three things before it can be used:
    corruption, and
    belongs in a competing model rather than in P_error.)
 
-2. **Error granularity**: Does epsilon apply per child (the entire record is
+2. **Error granularity**: Does $\epsilon$ apply per child (the entire record is
    suspect) or per field (individual trait values can be wrong)? Per-field
    errors are more realistic but more complex.
 
-3. **Epsilon treatment**: Is epsilon fixed (e.g. 0.01), globally estimated,
-   hierarchical across litters, or given a prior? If epsilon is freely
+3. **Epsilon treatment**: Is $\epsilon$ fixed (e.g. 0.01), globally estimated,
+   hierarchical across litters, or given a prior? If $\epsilon$ is freely
    fitted per model, a wrong model can inflate its contamination fraction to
-   explain difficult observations as "errors." The same epsilon and P_error
+   explain difficult observations as "errors." The same $\epsilon$ and $P_{\text{error}}$
    must be used across all competing game-mechanic models.
 
 Also distinguish "recording error" from "rare true game behavior" -- these
@@ -489,11 +482,11 @@ should not share the same mixture component. A recording error corrupts the
 observation; a rare game behavior is a real event the model should explain.
 
 **Primary baseline model** (to be used for all formal comparisons):
-- E_i ~ Bernoulli(epsilon) per child (the entire four-trait child outcome
-  vector Y_i is suspect; parent fields are conditioned on as correct)
-- P_record-error(Y_i) = 1001^(-4) (uniform over {0,...,1000}^4)
-- epsilon ~ Beta(1, 99) prior (low-contamination prior, mean 1%, mode 0)
-- The same observation model and epsilon treatment apply to every competing
+- $E_i \sim \text{Bernoulli}(\epsilon)$ per child (the entire four-trait child outcome
+  vector $Y_i$ is suspect; parent fields are conditioned on as correct)
+- $P_{\text{record-error}}(Y_i) = 1001^{-4}$ (uniform over $\{0,\ldots,1000\}^4$)
+- $\epsilon \sim \text{Beta}(1, 99)$ prior (low-contamination prior, mean 1%, mode 0)
+- The same observation model and $\epsilon$ treatment apply to every competing
   game-mechanics model
 - "Rare genuine game behavior" is NOT included in P_record-error -- that is
   a competing model of the game, not corrupted observation
@@ -504,23 +497,23 @@ along two orthogonal axes:
 1. **Error-kernel/granularity axis**: switch the error shape (per-record
    uniform, per-field, one-digit) while integrating over error rate.
    To isolate kernel shape from effective rate, place the prior on a
-   common attempted-error probability q ~ Beta(1, 99) (q is the
+   common attempted-error probability $q \sim \text{Beta}(1, 99)$ ($q$ is the
    probability of an attempted corruption event per record, before
    accounting for clamping or identity outcomes) and transform for
-   each kernel: per-record uses epsilon = q; per-field uses
-   epsilon_field = 1 - (1-q)^(1/4); one-digit uses epsilon_digit = q.
+   each kernel: per-record uses $\epsilon = q$; per-field uses
+   $\epsilon_{\text{field}} = 1 - (1-q)^{1/4}$; one-digit uses $\epsilon_{\text{digit}} = q$.
    Note: for the one-digit kernel, clamping can return altered values
    to the original, so the observable-change probability is slightly
-   below q for boundary trait values; q is consistently treated as the
+   below $q$ for boundary trait values; $q$ is consistently treated as the
    attempted-error rate across all kernels.
 2. **Error-rate axis**: for each error kernel, replace the Beta prior with
    fixed error rates from a preregistered grid. Define the grid in terms
-   of a common attempted-error probability q = {0.005, 0.01, 0.02, 0.05}
+   of a common attempted-error probability $q \in \{0.005, 0.01, 0.02, 0.05\}$
    (consistent with Axis 1; q is the latent attempted-error rate, not
    the observable-change rate). For the primary per-record model,
-   epsilon = q directly. For per-field errors, translate to
-   epsilon_field = 1 - (1-q)^(1/4). For one-digit errors,
-   epsilon_digit = q. Report the corresponding observable-change
+   $\epsilon = q$ directly. For per-field errors, translate to
+   $\epsilon_{\text{field}} = 1 - (1-q)^{1/4}$. For one-digit errors,
+   $\epsilon_{\text{digit}} = q$. Report the corresponding observable-change
    probability alongside q for each kernel when results are presented.
 
 Run at minimum the diagonal (each kernel at its matched prior) and the
@@ -529,20 +522,20 @@ rate sweep on the primary per-record kernel. The full Cartesian product
 
 Each alternative error model must be fully specified as a normalized
 generative likelihood before use:
-- **Per-field errors**: E_{i,t} ~ Bernoulli(epsilon_field) per trait per
-  child; corrupted trait Y_{i,t} replaced by Uniform{0,...,1000};
-  epsilon_field is derived from the common record-level rate q via
-  epsilon_field = 1 - (1 - q)^{1/4} (no independent prior on
-  epsilon_field; the prior on q from the error-kernel axis induces the
-  prior on epsilon_field, while the fixed q grid from the error-rate
+- **Per-field errors**: $E_{i,t} \sim \text{Bernoulli}(\epsilon_{\text{field}})$ per trait per
+  child; corrupted trait $Y_{i,t}$ replaced by $\text{Uniform}\{0,\ldots,1000\}$;
+  $\epsilon_{\text{field}}$ is derived from the common record-level rate $q$ via
+  $\epsilon_{\text{field}} = 1 - (1 - q)^{1/4}$ (no independent prior on
+  $\epsilon_{\text{field}}$; the prior on $q$ from the error-kernel axis induces the
+  prior on $\epsilon_{\text{field}}$, while the fixed $q$ grid from the error-rate
   axis induces corresponding fixed per-field rates). Note: 1% per-field implies ~3.9% probability that at
   least one of four fields is corrupted per record. When comparing
   against the primary 1% per-record model, report both the per-field
-  epsilon_field and implied per-record rate 1 - (1 - epsilon_field)^4
-- **One-digit transcription model**: with probability epsilon_digit, one
+  $\epsilon_{\text{field}}$ and implied per-record rate $1 - (1 - \epsilon_{\text{field}})^4$
+- **One-digit transcription model**: with probability $\epsilon_{\text{digit}}$, one
   randomly selected decimal digit of one randomly selected trait is
   replaced by a uniform random digit from the other 9 digits.
-  Note: epsilon_digit = q is the attempted-transcription-error
+  Note: $\epsilon_{\text{digit}} = q$ is the attempted-transcription-error
   probability; the observable-change probability is slightly lower
   because post-replacement clamping to [0, 1000] can map the altered
   value back to the original for boundary trait values (e.g., trait
@@ -552,7 +545,7 @@ generative likelihood before use:
   materially affects results. Out-of-range values after
   digit replacement are clamped to [0, 1000]. Trait values are
   represented as zero-padded 4-character strings (e.g. "0042") before
-  digit selection; epsilon_digit ~ Beta(1, 99)
+  digit selection; $\epsilon_{\text{digit}} \sim \text{Beta}(1, 99)$
 - **Parent misattribution**: latent true parent pair Z_i drawn uniformly
   from all candidate pairs within +/-19 coordinate range of the recorded
   child position; P(Y_i | Z_i, M) uses the true parent pair; this is not
@@ -785,26 +778,26 @@ by integrating or summing over all model-specific latent states and
 parameters with defensible priors.
 
 **Prerequisite -- proper likelihood required**: Bayesian evidence requires a
-proper probability model P(D | theta, M) that integrates to one. The current
-floored score explicitly replaces tiny/zero probabilities with 1e-15 without
+proper probability model $P(D \mid \theta, M)$ that integrates to one. The current
+floored score explicitly replaces tiny/zero probabilities with $10^{-15}$ without
 renormalizing. You cannot give a non-normalized heuristic a prior, integrate
 it, and call the result a Bayes factor. The contamination likelihood
 (Section 3.2 M2) must be implemented first:
-P_obs = (1 - epsilon) * P_game + epsilon * P_error. Only then can Bayesian
+$P_{\text{obs}} = (1 - \epsilon) \cdot P_{\text{game}} + \epsilon \cdot P_{\text{error}}$. Only then can Bayesian
 evidence be validly calculated.
 
 **Why this matters**: The cv_ll failure shows cross-validation is unreliable.
 Bayesian model comparison is the principled alternative, but only if the
 likelihood is proper.
 
-**Complete model evidence.** For each model architecture M, let theta_M
+**Complete model evidence.** For each model architecture $M$, let $\theta_M$
 contain every architecture-specific unknown parameter and latent state,
 including parental latent states if present, clone parameters, inheritance
 parameters, mutation parameters, environmental/random-effect parameters, and
-all other nuisance quantities. Let epsilon denote the common observation-error
+all other nuisance quantities. Let $\epsilon$ denote the common observation-error
 parameter.
 
-    p(D_children | X, M) = integral p(D_children | X, theta_M, epsilon, M) p(theta_M | X, M) p(epsilon) d(theta_M) d(epsilon)
+$$p(D_{\text{children}} \mid X, M) = \int p(D_{\text{children}} \mid X, \theta_M, \epsilon, M) \, p(\theta_M \mid X, M) \, p(\epsilon) \, d\theta_M \, d\epsilon$$
 
 where X denotes the observed parent phenotypes (conditioned on, not
 modeled). All evidence, posterior, and Bayes-factor expressions condition
@@ -816,59 +809,59 @@ is explicitly justified and simulation-validated.
 
 **Posterior model probabilities** additionally require model priors:
 
-    p(M | D_children, X) proportional-to p(D_children | X, M) * p(M)
+$$p(M \mid D_{\text{children}}, X) \propto p(D_{\text{children}} \mid X, M) \cdot p(M)$$
 
 If no defensible model priors are specified, report marginal likelihoods or
 Bayes factors rather than absolute posterior model probabilities.
 
 **Required prior specifications** (primary preregistered choices; alternatives
 are sensitivity analyses only):
-- Contamination fraction: epsilon ~ Beta(1, 99) (shared across all models)
-- CLAIM clone fraction: c_l ~ Beta(1, 9) per litter (mean 10%, mode 0).
+- Contamination fraction: $\epsilon \sim \text{Beta}(1, 99)$ (shared across all models)
+- CLAIM clone fraction: $c_l \sim \text{Beta}(1, 9)$ per litter (mean 10%, mode 0).
   This is a subjective skeptical prior chosen on parsimony grounds
   (favoring simpler mechanisms over elaborate ones), not calibrated to
-  the current dataset. Sensitivity analysis: recompute under Beta(1,4), Beta(1,19),
-  and Beta(2,8) to verify conclusions are not prior-dominated.
+  the current dataset. Sensitivity analysis: recompute under $\text{Beta}(1,4)$, $\text{Beta}(1,19)$,
+  and $\text{Beta}(2,8)$ to verify conclusions are not prior-dominated.
   Hierarchical extension deferred to sensitivity
-- Clone source: P(S=A) = P(S=B) = 1/2 (primary symmetry assumption; not
-  empirically established). Sensitivity: s = P(S=A) ~ Beta(1, 1)
-- Model C inheritance biases: q_t ~ Beta(1, 1) per trait
-- Model D crossover probability: p_block ~ Beta(1, 1)
-- Model E mutation-count simplex: (pi_0, pi_1, pi_2) ~ Dirichlet(1, 1, 1)
-- Model F target weights: w_j ~ Dirichlet(1, ..., 1), i.e.
-  M ~ Categorical(w_1, ..., w_8), called mutation-target weights
-- Model G mean-reversion strength: lambda ~ Beta(1, 1)
+- Clone source: $P(S=A) = P(S=B) = 1/2$ (primary symmetry assumption; not
+  empirically established). Sensitivity: $s = P(S=A) \sim \text{Beta}(1, 1)$
+- Model C inheritance biases: $q_t \sim \text{Beta}(1, 1)$ per trait
+- Model D crossover probability: $p_{\text{block}} \sim \text{Beta}(1, 1)$
+- Model E mutation-count simplex: $(\pi_0, \pi_1, \pi_2) \sim \text{Dirichlet}(1, 1, 1)$
+- Model F target weights: $w_j \sim \text{Dirichlet}(1, \ldots, 1)$, i.e.
+  $M \sim \text{Categorical}(w_1, \ldots, w_8)$, called mutation-target weights
+- Model G mean-reversion strength: $\lambda \sim \text{Beta}(1, 1)$
 - Model H local/jump mixture (general two-component mutation):
-  rho ~ Beta(1, 5) (prior mean 1/6, concentrating near rare jumps;
-  sensitivity alternative: Beta(1,1) for uninformative);
-  K_jump ~ Uniform[10, 500] (magnitude of signed jump kernel)
-- Model I continuous latent-state: per-gene prior ~ Uniform(0, 1000)
+  $\rho \sim \text{Beta}(1, 5)$ (prior mean 1/6, concentrating near rare jumps;
+  sensitivity alternative: $\text{Beta}(1,1)$ for uninformative);
+  $K_{\text{jump}} \sim \text{Uniform}[10, 500]$ (magnitude of signed jump kernel)
+- Model I continuous latent-state: per-gene prior $\sim \text{Uniform}(0, 1000)$
   density (continuous, not the discrete base measure used by other models);
   observed traits remain discrete PMFs via the rounding/display transform
-- Model J epistatic coupling: cross-trait coefficient ~ Normal(0, 50)
+- Model J epistatic coupling: cross-trait coefficient $\sim \text{Normal}(0, 50)$
   per coupling term
-- Model K environmental loadings: beta_t ~ Normal(0, sigma_beta),
-  sigma_beta ~ HalfCauchy(100), E_i ~ Normal(0, 1)
+- Model K environmental loadings: $\beta_t \sim \text{Normal}(0, \sigma_\beta)$,
+  $\sigma_\beta \sim \text{HalfCauchy}(100)$, $E_i \sim \text{Normal}(0, 1)$
 - Model L_R (primary benchmark): litter-level random effect on mutation
-  range. mu_R ~ Normal(log(150), 1) (global log-mean, inferred);
-  tau_R ~ HalfCauchy(0.5) (log-scale SD; actual prior-predictive
+  range. $\mu_R \sim \text{Normal}(\log(150), 1)$ (global log-mean, inferred);
+  $\tau_R \sim \text{HalfCauchy}(0.5)$ (log-scale SD; actual prior-predictive
   range of R_l must be computed via simulation including marginalization
   over the hyperprior, rounding, and clamping -- do not use hand-derived
   approximations);
-  R_l = round(exp(Normal(mu_R, tau_R))) clamped to [1, 1000]
+  $R_l = \text{round}(\exp(\text{Normal}(\mu_R, \tau_R)))$ clamped to $[1, 1000]$
   (integer discretization matching the nudge mechanism).
-  Inferring mu_R rather than fixing the center at log(150) ensures the
-  tau_R = 0 vs tau_R > 0 comparison isolates heterogeneity rather than
+  Inferring $\mu_R$ rather than fixing the center at $\log(150)$ ensures the
+  $\tau_R = 0$ vs $\tau_R > 0$ comparison isolates heterogeneity rather than
   confounding it with a global shift away from 150. The null model
-  (tau_R = 0) infers mu_R, giving R = clamp[1,1000](round(exp(mu_R)))
+  ($\tau_R = 0$) infers $\mu_R$, giving $R = \text{clamp}_{[1,1000]}(\text{round}(\exp(\mu_R)))$
   (same transformation as the hierarchical alternative); the alternative
-  (tau_R > 0) infers both mu_R and tau_R.
+  ($\tau_R > 0$) infers both $\mu_R$ and $\tau_R$.
   Model L_clone (sensitivity): litter-level random effect on clone
-  fraction. mu_c ~ Normal(logit(0.1), 2) (global mean, inferred);
-  tau_c ~ HalfCauchy(1); logit(c_l) ~ Normal(mu_c, tau_c).
-  Inferring mu_c rather than fixing the center at logit(0.1) separates
+  fraction. $\mu_c \sim \text{Normal}(\text{logit}(0.1), 2)$ (global mean, inferred);
+  $\tau_c \sim \text{HalfCauchy}(1)$; $\text{logit}(c_l) \sim \text{Normal}(\mu_c, \tau_c)$.
+  Inferring $\mu_c$ rather than fixing the center at $\text{logit}(0.1)$ separates
   the global clone-rate estimate from between-litter heterogeneity:
-  tau_c measures dispersion independently of the overall level.
+  $\tau_c$ measures dispersion independently of the overall level.
   (Note: a litter-level mutation-rate random effect L_mut is omitted
   because CLAIM's mutation mechanism is categorical target selection
   (one of 8 slots), not a per-gene Bernoulli probability. A random
@@ -879,12 +872,12 @@ are sensitivity analyses only):
 - Model N: concrete benchmark instances with fixed deterministic rules
   (e.g. mutation target = child_index mod 8); these are zero-parameter
   point hypotheses, not a parameterized family (see Section 4.11)
-- Model O third-parent probability: eta ~ Beta(1, 9)
-- Model P0-independent: per-trait alpha_t ~ Beta(1, 1), sigma_t ~
-  HalfCauchy(100), with discretized-Normal observation model, traits
+- Model O third-parent probability: $\eta \sim \text{Beta}(1, 9)$
+- Model P0-independent: per-trait $\alpha_t \sim \text{Beta}(1, 1)$, $\sigma_t \sim
+  \text{HalfCauchy}(100)$, with discretized-Normal observation model, traits
   independent (see Section 4.11)
-- Model P0-coupled: same per-trait priors plus equicorrelation rho ~
-  Uniform(-1/3, 1) (strict open interval; see Section 4.11)
+- Model P0-coupled: same per-trait priors plus equicorrelation $\rho \sim
+  \text{Uniform}(-1/3, 1)$ (strict open interval; see Section 4.11)
 - Model P1: deferred until spatial data collected (Tier 5)
 
 Each model's complete parameter inventory must be finalized before computing
@@ -895,8 +888,8 @@ point models with a complete generative simulator: exact latent-state
 space, event ordering, kernel specification, boundary handling,
 display/observation mapping, and priors for every free quantity.
 Specifically: Model D requires a block layout and crossover-location law;
-Model G requires a full conditional distribution p(delta | g), not just
-E[delta | g]; Model H requires a specified jump kernel (sign, shape,
+Model G requires a full conditional distribution $p(\delta \mid g)$, not just
+$E[\delta \mid g]$; Model H requires a specified jump kernel (sign, shape,
 support) for K_jump; Model J requires explicit coupling terms and
 functional form; Model K requires a rounding/clamping observation law;
 Model O requires a rule for selecting the third tree or neighborhood
@@ -907,23 +900,23 @@ Section 4.6 item 5).
 
 **Primary inferential contract: conditional inference.** Condition on
 observed parent phenotypes. The unconditional base measure for each gene
-is iid DiscreteUniform{0, ..., 1000}. The latent-gene prior is then
+is iid $\text{DiscreteUniform}\{0, \ldots, 1000\}$. The latent-gene prior is then
 restricted (conditioned) to the set of genotypes compatible with the
 observed display value under each model's display rule. Because different
 display rules define different compatible sets, the conditional prior is
 model-specific but derived from the same universal base measure.
 
 Explicitly, for a parent displaying trait value D under a two-gene model:
-- **Mean rule**: compatible set = {(g1, g2) : round_half_up((g1+g2)/2) = D}.
-  Each pair receives equal mass 1/|compatible set|.
-- **Min rule**: compatible set = {(g1, g2) : min(g1, g2) = D} =
-  {(D, g2) : g2 >= D} union {(g1, D) : g1 > D}. Each pair gets
-  equal mass 1/|compatible set|.
-- **Max rule**: compatible set = {(g1, g2) : max(g1, g2) = D} =
-  {(D, g2) : g2 <= D} union {(g1, D) : g1 < D}. Each pair gets
-  equal mass 1/|compatible set|.
-- **g1 rule**: compatible set = {(D, g2) : g2 in {0,...,1000}}.
-  g2 is uniform on {0,...,1000}.
+- **Mean rule**: compatible set $= \{(g_1, g_2) : \text{round\_half\_up}((g_1+g_2)/2) = D\}$.
+  Each pair receives equal mass $1/|\text{compatible set}|$.
+- **Min rule**: compatible set $= \{(g_1, g_2) : \min(g_1, g_2) = D\} =
+  \{(D, g_2) : g_2 \geq D\} \cup \{(g_1, D) : g_1 > D\}$. Each pair gets
+  equal mass $1/|\text{compatible set}|$.
+- **Max rule**: compatible set $= \{(g_1, g_2) : \max(g_1, g_2) = D\} =
+  \{(D, g_2) : g_2 \leq D\} \cup \{(g_1, D) : g_1 < D\}$. Each pair gets
+  equal mass $1/|\text{compatible set}|$.
+- **g1 rule**: compatible set $= \{(D, g_2) : g_2 \in \{0,\ldots,1000\}\}$.
+  $g_2$ is uniform on $\{0,\ldots,1000\}$.
 
 This conditioning convention must be used consistently across all model
 comparisons. For models with different gene counts (e.g. three-gene Model
@@ -931,17 +924,17 @@ A), extend the base measure analogously (iid DiscreteUniform per gene)
 and condition on the model's display rule.
 
 **Model I exception (continuous latent states)**: Model I uses real-valued
-genes with unconditional base density p0(G | M_I) = iid Uniform(0, 1000)
+genes with unconditional base density $p_0(G \mid M_I) = \text{iid Uniform}(0, 1000)$
 (continuous, not discrete). The conditional prior given observed phenotype
 X is:
 
-    p(G | X, M_I) = p0(G | M_I) * 1{T_I(G) = X} / Z_I(X)
+$$p(G \mid X, M_I) = \frac{p_0(G \mid M_I) \cdot \mathbf{1}\{T_I(G) = X\}}{Z_I(X)}$$
 
-where T_I is the continuous-to-discrete display transform (inheritance and
-mutation operate on reals; displayed traits are rounded) and Z_I(X) is the
+where $T_I$ is the continuous-to-discrete display transform (inheritance and
+mutation operate on reals; displayed traits are rounded) and $Z_I(X)$ is the
 normalization integral over the continuous compatible region
-{G : T_I(G) = X}. For the mean rule this region is
-{(g1,g2) : floor((g1+g2)/2 + 0.5) = D}, a continuous strip. Compute Z_I
+$\{G : T_I(G) = X\}$. For the mean rule this region is
+$\{(g_1,g_2) : \lfloor(g_1+g_2)/2 + 0.5\rfloor = D\}$, a continuous strip. Compute $Z_I$
 analytically or by numerical quadrature. The discrete and continuous
 contracts are both derived from their respective uniform base measures and
 conditioned identically; they differ only in whether the compatible set is
@@ -967,16 +960,16 @@ likelihood integration. For discrete genes:
 - **Conditional factorization**: CLAIM's likelihood does *not* factor
   unconditionally across traits. CLAIM contains child-level global latent
   variables. In the non-clone branch, conditional on exclusive mutation
-  target M=m, trait contributions factor under the current architecture.
-  In the clone branch, cloned-parent identity S in {A, B} is an additional
+  target $M=m$, trait contributions factor under the current architecture.
+  In the clone branch, cloned-parent identity $S \in \{A, B\}$ is an additional
   shared latent variable; conditioning only on clone=True leaves all four
   traits coupled through the common parent choice. The joint child
   likelihood has the form:
-  P(y) = c * sum_s P(S=s) * P_clone(y | S=s) + (1-c) * sum_m P(M=m) * prod_t P(y_t | M=m, theta),
-  where P(S=A) = P(S=B) = 1/2 by default (symmetric unless mechanically asymmetric).
+$$P(y) = c \sum_s P(S=s) \, P_{\text{clone}}(y \mid S=s) + (1-c) \sum_m P(M=m) \prod_t P(y_t \mid M=m, \theta)$$
+  where $P(S=A) = P(S=B) = 1/2$ by default (symmetric unless mechanically asymmetric).
   **Clone genotype transition** (required for multi-generation pedigree
   likelihoods in Experiment 4): if "clone" means genetic clone,
-  G_child = G_S (exact copy of the clone-source parent's full latent
+  $G_{\text{child}} = G_S$ (exact copy of the clone-source parent's full latent
   genotype, with no recombination or mutation). If cloning copies only
   the observable phenotype, the child's latent genotype must be
   generated by a separate specification. The genetic-clone definition
@@ -984,8 +977,8 @@ likelihood integration. For discrete genes:
   Dynamic programming can exploit the conditional factorization in the
   non-clone branch, but must sum/integrate over mutation target, clone
   status, and clone source exactly.
-- **Evidence estimation** for marginal likelihoods p(D | M). Ordinary
-  MCMC samples the posterior but does not return p(D | M); a dedicated
+- **Evidence estimation** for marginal likelihoods $p(D \mid M)$. Ordinary
+  MCMC samples the posterior but does not return $p(D \mid M)$; a dedicated
   evidence estimator is required. Preregister one of: (a) thermodynamic
   integration / power posteriors (Friel & Pettitt 2008), (b) stepping-
   stone sampling (Xie et al. 2011), (c) bridge sampling from a
@@ -994,10 +987,10 @@ likelihood integration. For discrete genes:
   estimator on synthetic data with known marginal likelihoods before
   applying to real data. Preregister convergence diagnostics and a
   numerical-error tolerance for log marginal likelihoods (e.g., run
-  two independent estimator runs and require |log Z_1 - log Z_2| <
-  0.1 nats; or use replicate-based SE < 0.05 nats). When the
+  two independent estimator runs and require $|\log Z_1 - \log Z_2| <
+  0.1$ nats; or use replicate-based SE $< 0.05$ nats). When the
   numerical uncertainty interval on a log-BF overlaps a decision
-  boundary (BF = 0.01 for A_prospective inclusion, BF = 10 for
+  boundary ($\text{BF} = 0.01$ for $A_{\text{prospective}}$ inclusion, $\text{BF} = 10$ for
   confirmatory verdict), the conservative decision applies: retain
   the rival in A_prospective; do not claim BF >= 10 until numerical
   uncertainty is resolved by increasing computation.
@@ -1027,25 +1020,26 @@ procedure S_final, always including CLAIM plus every A_prospective
 member in the candidate set (so K_arch >= 2 is guaranteed by the
 non-empty A_prospective requirement)) where the atomic unit is the
 architecture family.
-Preregister within-family prior weights pi_{j|f} summing to 1 per family
+Preregister within-family prior weights $\pi_{j \mid f}$ summing to 1 per family
 (default: equal weight among the family's fully specified point models).
-Architecture-level evidence: p(D|f) = sum_j pi_{j|f} p(D|f_j).
-Architecture-level posterior-predictive distribution (post D_train):
-posterior within-family weights pi~_{j|f}(D) = pi_{j|f} p(D|f_j) / p(D|f),
-giving p(y|D,f) = sum_j pi~_{j|f}(D) p(y|D,f_j). Use these posterior
+Architecture-level evidence: $p(D \mid f) = \sum_j \pi_{j \mid f} \, p(D \mid f_j)$.
+Architecture-level posterior-predictive distribution (post $D_{\text{train}}$):
+posterior within-family weights $\tilde{\pi}_{j \mid f}(D) = \pi_{j \mid f} \, p(D \mid f_j) / p(D \mid f)$,
+giving $p(y \mid D, f) = \sum_j \tilde{\pi}_{j \mid f}(D) \, p(y \mid D, f_j)$. Use these posterior
 weights for all architecture-level predictives, active design JSD, and
-the frozen prospective p(D_new|D_train,f). JSD uses equal weights over
-architecture families (1/K_arch per family for K_arch >= 2 surviving
+the frozen prospective $p(D_{\text{new}} \mid D_{\text{train}}, f)$. JSD uses equal weights over
+architecture families ($1/K_{\text{arch}}$ per family for $K_{\text{arch}} \geq 2$ surviving
 families). A_fit and A_prospective membership is determined by
-architecture-level BFs p(D|f)/p(D|CLAIM).
+architecture-level BFs $p(D \mid f)/p(D \mid \text{CLAIM})$.
 integrating parameter uncertainty into each model's predictive
 distribution. Explicitly, the criterion is:
 
-    M(y) = sum_k w_k P_k(y)
-    JSD_w(P_1, ..., P_K) = sum_k w_k * KL(P_k || M)
+$$M(y) = \sum_k w_k P_k(y)$$
 
-With equal weights w_k = 1/K, this equals the mutual information
-I(M; Y) under a uniform model prior -- i.e., it already averages over
+$$\text{JSD}_w(P_1, \ldots, P_K) = \sum_k w_k \cdot \text{KL}(P_k \| M)$$
+
+With equal weights $w_k = 1/K$, this equals the mutual information
+$I(M; Y)$ under a uniform model prior -- i.e., it already averages over
 possible future observations and measures expected reduction in
 uncertainty about which model generated them. (Note: JSD is NOT equal
 to (1/2)*symmetrized KL; a counterexample is disjoint support where
@@ -1056,7 +1050,7 @@ they may be substituted as weights in JSD_w as a sensitivity check, but
 equal-weight JSD is the primary preregistered design criterion. If the
 desired utility is information about both architecture and parameters
 (not just model identity), that requires the distinct quantity
-I((M, theta); Y), which is more expensive to compute. The cross
+$I((M, \theta); Y)$, which is more expensive to compute. The cross
 maximizing the preregistered criterion is the highest-ranked under that
 criterion (not universally "most informative" -- it is optimal only
 under the selected objective). Note: the JSD criterion as stated is a
@@ -1067,8 +1061,7 @@ per-child JSD because posterior updating saturates. For the initial
 screening stage, per-child JSD is a computationally tractable proxy
 for ranking crosses; for the final confirmatory design, compute the
 N-child batch-predictive JSD using the family-level formula:
-P_f(Y_{1:N}) = sum_j pi~_{j|f}(D) integral p(Y_{1:N} | d, theta, f_j)
-               p(theta | D, f_j) d theta
+$$P_f(Y_{1:N}) = \sum_j \tilde{\pi}_{j \mid f}(D) \int p(Y_{1:N} \mid d, \theta, f_j) \, p(\theta \mid D, f_j) \, d\theta$$
 where the sum over j (architecture-family point models) is outside the
 integral, reflecting that the point-model identity f_j is shared across
 the entire N-child batch (not redrawn independently per child). For
@@ -1132,7 +1125,7 @@ ranked crosses (which may be informationally redundant).
    the other gene could be anywhere from 5 to 1000. To guarantee genes near
    a boundary, use multi-generation pedigree information or breed for extreme
    values where the display rule constrains both genes (e.g. Color=5 under
-   the mean rule implies g1 + g2 ~ 10, so both genes must be near 0).
+   the mean rule implies $g_1 + g_2 \approx 10$, so both genes must be near 0).
 
 4. **High-N litter**: A single cross with 200+ children (achievable by
    repeated planting in-game) gives much stronger statistical power for all
@@ -1162,8 +1155,8 @@ cannot detect).
 **Specific analyses**:
 
 1. **Fine nudge-range sweep**: Plot fit_ll as a function of R from 50 to 300
-   in steps of 5. The current data tests R in {100, 125, 140, 150, 160, 175,
-   200}. A finer grid reveals whether there is a sharp peak at R=150 or a
+   in steps of 5. The current data tests $R \in \{100, 125, 140, 150, 160, 175,
+   200\}$. A finer grid reveals whether there is a sharp peak at $R=150$ or a
    broad plateau.
 
 2. **Profile scores for hidden genes**: For each litter and each focal
@@ -1178,9 +1171,9 @@ cannot detect).
    profiles would show *why* the other 32% are only bounded. Apply the
    same re-optimization principle to clone-fraction profiling.
 
-3. **Clone fraction profile**: For litters other than Hive1b, plot fit_ll as
-   a function of clone fraction c. If the curve is flat, cloning is
-   undetectable in that litter. If it peaks at c > 0, there may be a weak
+3. **Clone fraction profile**: For litters other than Hive1b, plot $\text{fit\_ll}$ as
+   a function of clone fraction $c$. If the curve is flat, cloning is
+   undetectable in that litter. If it peaks at $c > 0$, there may be a weak
    clone signal below the detection threshold.
 
 4. **Sloppy parameter identification**: Use exact profile score surfaces (and
@@ -1204,33 +1197,33 @@ cannot detect).
 5. **Prior-sensitivity analysis** (for Bayesian comparisons in Section 4.4):
    For each prior hyperparameter specified in Section 4.4, recompute
    marginal likelihoods under at least two defensible alternatives (e.g.
-   clone fraction Beta(1,9) vs Beta(1,4) vs Beta(2,8); epsilon Beta(1,99)
-   vs Beta(1,49); sigma_t HalfCauchy(100) vs HalfCauchy(50)). Also include
+   clone fraction $\text{Beta}(1,9)$ vs $\text{Beta}(1,4)$ vs $\text{Beta}(2,8)$; $\epsilon$ $\text{Beta}(1,99)$
+   vs $\text{Beta}(1,49)$; $\sigma_t$ $\text{HalfCauchy}(100)$ vs $\text{HalfCauchy}(50)$). Also include
    the latent-gene base measure as a sensitivity target: the iid
-   DiscreteUniform{0,...,1000} base measure is itself a consequential prior
+   $\text{DiscreteUniform}\{0,\ldots,1000\}$ base measure is itself a consequential prior
    choice. Declare whether it is treated as model-defining (and scope BF
    conclusions accordingly) or as a nuisance prior; if the latter, include
    at least one defensible alternative (e.g., a narrower range or a
    non-uniform base measure) in the grid. The full prior-sensitivity grid
    must be enumerated before running the analysis (not chosen after seeing
    results). Vary priors one-at-a-time first, then in prespecified joint
-   combinations (e.g. clone + epsilon jointly).
-   The primary robustness threshold is BF = 10. Classify each BF
+   combinations (e.g. clone + $\epsilon$ jointly).
+   The primary robustness threshold is $\text{BF} = 10$. Classify each BF
    result into one of three evidence categories: strong-CLAIM
-   (BF >= 10), indeterminate (0.1 < BF < 10), or strong-alternative
-   (BF <= 0.1). A conclusion is prior-sensitive if the evidence
+   ($\text{BF} \geq 10$), indeterminate ($0.1 < \text{BF} < 10$), or strong-alternative
+   ($\text{BF} \leq 0.1$). A conclusion is prior-sensitive if the evidence
    category changes across priors in the grid -- equivalently, if
-   the set of priors straddles one of the +/-log(10) boundaries. A
-   BF that remains >= 10 under all alternatives is not prior-sensitive
+   the set of priors straddles one of the $\pm\log(10)$ boundaries. A
+   BF that remains $\geq 10$ under all alternatives is not prior-sensitive
    even if its magnitude varies. Report the evidence category for
    every prior in the sensitivity grid for each contrast. Also add
-   the preregistered within-family weights pi_{j|f} to the
+   the preregistered within-family weights $\pi_{j \mid f}$ to the
    sensitivity grid: for every multi-submodel architecture family in
    A_fit, specify at least one defensible alternative weight scheme
    and verify that architecture-level BF and A_prospective membership
-   conclusions are robust to it. The contrast list is BF_{CLAIM,A} =
-   p(D|CLAIM)/p(D|A) for all A in A_fit, preregistered before running
-   the sensitivity grid. BF = 3 / BF = 1/3 boundary is reported as
+   conclusions are robust to it. The contrast list is $\text{BF}_{CLAIM,A} =
+   p(D \mid \text{CLAIM})/p(D \mid A)$ for all $A \in A_{\text{fit}}$, preregistered before running
+   the sensitivity grid. $\text{BF} = 3$ / $\text{BF} = 1/3$ boundary is reported as
    a secondary descriptive analysis only. Prior-sensitive conclusions
    must not be treated as definitive.
 
@@ -1245,16 +1238,15 @@ days-to-weeks cost estimate.
 explain?
 
 **Method**: Define a single anomaly statistic for each child: the
-best-model floored log-score S_i = max_M log P_floor(y_i | M,
-theta_hat_M), where P_floor is the current floored score (to be
+best-model floored log-score $S_i = \max_M \log P_{\text{floor}}(y_i \mid M, \hat{\theta}_M)$, where $P_{\text{floor}}$ is the current floored score (to be
 replaced by the proper contamination log-predictive probability once
-available). Rank children by S_i -- a child is family-wide anomalous
+available). Rank children by $S_i$ -- a child is family-wide anomalous
 when even its best-model score is low. (Ranking by worst-case or average
 is misleading: a child can have a terrible worst-case score because one
 deliberately bad rival hates it while CLAIM explains it perfectly.) For
 stronger results, use leave-one-child-out or posterior-predictive scores
 so each child's own data is not used to fit the genes against which it
-is judged. Use this same S_i definition consistently for ranking,
+is judged. Use this same $S_i$ definition consistently for ranking,
 calibration, and thresholding.
 
 **What anomalous children mean**: A child that all models score poorly is a
@@ -1262,10 +1254,10 @@ highly informative data point. It may reveal a mechanic outside the entire
 model family, a data error (wrong parent recorded, transcription mistake),
 or a legitimate low-probability draw from the true generating process.
 Determine anomaly status via simulation/posterior-predictive calibration:
-use the S_i statistic defined above (max_M log P_floor(y_i | M, ...))
+use the $S_i$ statistic defined above ($\max_M \log P_{\text{floor}}(y_i \mid M, \ldots)$)
 consistently for ranking, calibration, and thresholding.
 In each bootstrap replicate, simulate a full dataset, refit all
-candidate models, recompute the same max_M statistic, and compare. This
+candidate models, recompute the same $\max_M$ statistic, and compare. This
 accounts for both fitting and model-selection effects.
 
 **Follow-up for each anomaly**:
@@ -1294,8 +1286,8 @@ number of replicates and models.
 
 **Analyses**:
 
-1. **Child-parent residuals**: Compute delta_trait = child_trait -
-   nearest_parent_trait for all 4 traits and all 692 children. "Nearest
+1. **Child-parent residuals**: Compute $\delta_{\text{trait}} = \text{child\_trait} -
+   \text{nearest\_parent\_trait}$ for all 4 traits and all 692 children. "Nearest
    parent" means whichever parent's value is closer to the child's.
    **Tie treatment**: when the child is equidistant from both parents,
    omit that child-trait pair from signed-residual analyses and report
@@ -1356,27 +1348,26 @@ processes?
 component models with learned mixture weights. The observation model must
 include the same contamination likelihood as the baseline (Section 3.2):
 
-    p_obs(y_i) = (1 - epsilon) * sum_k w_k * p_k(y_i | G, theta_k)
-                 + epsilon * p_error(y_i)
+$$p_{\text{obs}}(y_i) = (1 - \epsilon) \sum_k w_k \cdot p_k(y_i \mid G, \theta_k) + \epsilon \cdot p_{\text{error}}(y_i)$$
 
-where epsilon is the recording-error probability and p_error is the
+where $\epsilon$ is the recording-error probability and $p_{\text{error}}$ is the
 contamination distribution. Without this, difficult or transcription-error
 children can be allocated to the flexible (e.g. INDEP) component instead
 of the error term, manufacturing a false heterogeneous-mechanism signal.
 
 Use the EM algorithm:
 
-1. E-step: compute the posterior error probability r_i0 = P(E_i = 1 | y_i)
+1. E-step: compute the posterior error probability $r_{i0} = P(E_i = 1 \mid y_i)$
    and the joint mechanism responsibility
-   q_ik = P(E_i = 0, Z_i = k | y_i) = (1 - r_i0) * r_ik,
-   where r_ik = P(Z_i = k | E_i = 0, y_i) is the conditional mechanism
-   assignment given non-error. All M-step updates use q_ik (not r_ik),
+   $q_{ik} = P(E_i = 0, Z_i = k \mid y_i) = (1 - r_{i0}) \cdot r_{ik}$,
+   where $r_{ik} = P(Z_i = k \mid E_i = 0, y_i)$ is the conditional mechanism
+   assignment given non-error. All M-step updates use $q_{ik}$ (not $r_{ik}$),
    so that children with high error probability contribute less to
    mechanism and genotype estimation.
 2. M-step:
-   (a) Update epsilon: for MAP EM with epsilon ~ Beta(a, b),
-       epsilon_new = (sum_i r_i0 + a - 1) / (N + a + b - 2)
-       (for the primary Beta(1,99) this becomes sum_i r_i0 / (N + 98)).
+   (a) Update epsilon: for MAP EM with $\epsilon \sim \text{Beta}(a, b)$,
+       $\epsilon_{\text{new}} = (\sum_i r_{i0} + a - 1) / (N + a + b - 2)$
+       (for the primary Beta(1,99) this becomes $\sum_i r_{i0} / (N + 98)$).
        This Beta-prior MAP treatment is the primary formal branch
        consistent with the §3.2 contamination contract (epsilon ~
        Beta(1,99)). Fixing epsilon at its prior mean is a sensitivity
@@ -1385,17 +1376,17 @@ Use the EM algorithm:
        comparison. Report fixed-epsilon results alongside the primary
        MAP results but label them explicitly as sensitivity analysis.
    (b) Update mixture weights:
-       w_k^new = sum_i q_ik / sum_i (1 - r_i0).
+$$w_k^{\text{new}} = \frac{\sum_i q_{ik}}{\sum_i (1 - r_{i0})}$$
    (c) Update genotypes and mechanism parameters using q_ik-weighted
        contributions. **Parental latent genotypes must be shared across
        all mixture components** -- each physical parent tree has one
        genotype used by every component. The shared-genotype update
        maximizes the q_ik-weighted total log-likelihood:
-       G* = argmax_G sum_i sum_k q_ik * log p_k(y_i | G, theta_k).
+$$G^* = \operatorname*{arg\,max}_G \sum_i \sum_k q_{ik} \cdot \log p_k(y_i \mid G, \theta_k)$$
        This is a blockwise conditional update (generalized EM / ECM):
-       update G, then update each theta_k separately. Each block update
+       update $G$, then update each $\theta_k$ separately. Each block update
        must non-decrease the Q-function. Either iterate the inner
-       (G, theta_1, ..., theta_K) coordinate blocks to a joint M-step
+       $(G, \theta_1, \ldots, \theta_K)$ coordinate blocks to a joint M-step
        tolerance, or accept a single-pass generalized EM step with an
        explicit outer convergence criterion. Under MLE, monitor
        non-decrease of the observed-data log-likelihood; under MAP
@@ -1416,27 +1407,27 @@ Use the EM algorithm:
 
 **Application**: Start with K=2 -- a CLAIM component and an INDEP component
 with a learned mixture weight w. EM yields a point estimate of w.
-When w-hat is comfortably interior (e.g. 0.1 < w-hat < 0.9), ordinary
+When $\hat{w}$ is comfortably interior (e.g. $0.1 < \hat{w} < 0.9$), ordinary
 parametric-bootstrap percentile intervals or profile intervals may be
 used as descriptive summaries (B >= 200 replicates preserving litter
 sizes, pedigree structure, and shared genotypes). However, these are
-**not valid for the formal pure-vs-mixture decision** near w = 1 (see
+**not valid for the formal pure-vs-mixture decision** near $w = 1$ (see
 boundary note below). If the
-point estimate w-hat is near 1.0 and the mixture
+point estimate $\hat{w}$ is near 1.0 and the mixture
 provides no calibrated predictive improvement over pure CLAIM, the data
-does not support a mixture. **Boundary note**: w = 1.0 lies on the
+does not support a mixture. **Boundary note**: $w = 1.0$ lies on the
 boundary of the parameter space. Standard profile-likelihood asymptotics
 fail here for two reasons: (1) the mixture weight is on a boundary, and
-(2) when w = 1 the disappearing component's mechanism-specific parameters
-theta_k are unidentifiable under the null. This is more severe than a
+(2) when $w = 1$ the disappearing component's mechanism-specific parameters
+$\theta_k$ are unidentifiable under the null. This is more severe than a
 single identified parameter hitting a boundary; the simple chi-bar-square
-(50:50 chi^2_0:chi^2_1) approximation does not generally apply.
+(50:50 $\chi^2_0$:$\chi^2_1$) approximation does not generally apply.
 **Primary test**: use a parametric-bootstrap LRT generated under
-H0: w = 1 (pure CLAIM). Preregister a fixed B large enough for the
+$H_0: w = 1$ (pure CLAIM). Preregister a fixed B large enough for the
 required Monte Carlo precision (minimum B = 999; choose B to ensure
 the binomial Monte Carlo error on the bootstrap p-value at the
 intended significance level is below a preregistered tolerance --
-e.g., for alpha = 0.05 and B = 999, the MC SE ~ 0.007; for SE < 0.003
+e.g., for $\alpha = 0.05$ and $B = 999$, the MC SE $\approx 0.007$; for SE $< 0.003$
 use B >= 5000). Do not increase B adaptively after seeing results;
 if in doubt, preregister the larger B. For each replicate, simulate data from pure CLAIM, refit
 both the pure model and the full mixture pipeline, and record the
@@ -1503,7 +1494,7 @@ strategies for discovering things we do not know we do not know.
 
 **Known unknowns** (identified gaps, testable):
 - Exact nudge distribution shape (uniform vs triangular are close)
-- Length display rule (g1 vs min/max indistinguishable by fit)
+- Length display rule ($g_1$ vs min/max indistinguishable by fit)
 - Exact clone mechanism (only observable in Hive1b)
 - Second gene value for many traits (bounded but not identified)
 - Parent selection when multiple candidates exist within +/-19 range
@@ -1577,8 +1568,8 @@ of the research program:
   recalibration.
 - **A_prospective** (prospective BF set): the subset of A_fit used
   in Tier 5's pairwise-minimum BF criterion. Frozen before collecting
-  D_new. Must include every architecture in A_fit that achieved
-  marginal-likelihood within BF > 1/100 of CLAIM on training data.
+  $D_{\text{new}}$. Must include every architecture in $A_{\text{fit}}$ that achieved
+  marginal-likelihood within $\text{BF} > 1/100$ of CLAIM on training data.
 
 State explicitly which §4.11 models belong to each set and document the
 deterministic promotion rules. P1 is explicitly exempt from G_stress
@@ -1591,8 +1582,8 @@ concrete parameter values, latent-state generation, mutation order, boundary
 handling, and display rules. Picking one convenient parameterization per
 family understates the model-misspecification problem. The adversarial study
 should run a stress-test ensemble across a preregistered grid of
-parameter settings to produce a response surface P(CLAIM selected |
-M_true, theta_true) rather than a single pass/fail per architecture.
+parameter settings to produce a response surface $P(\text{CLAIM selected} \mid
+M_{\text{true}}, \theta_{\text{true}})$ rather than a single pass/fail per architecture.
 The stopping criterion (Section 6.3 item 2) requires the false-CLAIM
 upper bound to hold for every cell in this grid, so the grid must be
 defined before running the study.
@@ -1630,8 +1621,8 @@ and (f) the precise event counted as "false CLAIM" in the stress-test
 grid (e.g. CLAIM is selected when it did not generate the data).
 Analytically distribution-equivalent boundary points -- where the
 alternative architecture's data-generating process is observationally
-indistinguishable from CLAIM (e.g. Model C at q_t=0.5 exactly, Model
-E at pi_1=1 exactly) -- must be explicitly excluded from the false-
+indistinguishable from CLAIM (e.g. Model C at $q_t=0.5$ exactly, Model
+E at $\pi_1=1$ exactly) -- must be explicitly excluded from the false-
 CLAIM event and labelled as equivalence controls rather than stress
 cells; selecting CLAIM at such points is not an error. Only cells with
 a preregistered positive predictive-separation criterion (e.g.
@@ -1644,7 +1635,7 @@ that exact rule in every design calculation. The "surviving model set"
 referenced in Section 4.5 is defined by this candidate-set rule.
 
 **Model A -- Three genes per trait.** Each trait has three latent values
-g1, g2, g3. Child inherits each slot independently. Display could be median,
+$g_1, g_2, g_3$. Child inherits each slot independently. Display could be median,
 mean, or order statistic. *Why plausible*: within the tested hidden-state family, the
 one-value architecture performs poorly, but this only establishes that
 two values fit better than one -- not that exactly two is correct. *Test*: derive the complete predicted observable mixture under
@@ -1668,13 +1659,13 @@ mutation/display, and compare observed child frequencies against this null.
 *Refute*: crosses reveal combinations requiring both slots from one parent.
 
 **Model C -- Biased parental inheritance.** Inheritance probability is
-q_t per trait (fitted, not fixed at 0.5). *Why plausible*: spatial
+$q_t$ per trait (fitted, not fixed at 0.5). *Why plausible*: spatial
 orientation, tree age, or parent-selection logic could create asymmetry.
 *Test*: reciprocal parent-role experiments show systematic bias. *Refute*:
-a joint equivalence criterion is met: P(max_t |q_t - 0.5| < delta | D)
->= 0.95 (Bayesian), or simultaneous confidence intervals for all four
-q_t fall within [0.5 - delta, 0.5 + delta] with multiplicity-adjusted
-coverage (frequentist). Preregister delta (e.g. delta = 0.05). This
+a joint equivalence criterion is met: $P(\max_t |q_t - 0.5| < \delta \mid D)
+\geq 0.95$ (Bayesian), or simultaneous confidence intervals for all four
+$q_t$ fall within $[0.5 - \delta, 0.5 + \delta]$ with multiplicity-adjusted
+coverage (frequentist). Preregister $\delta$ (e.g. $\delta = 0.05$). This
 establishes that bias across all traits is jointly negligible.
 
 **Model D -- Block/chromosomal inheritance with crossover.** Eight genes
@@ -1687,31 +1678,31 @@ with CLAIM's per-trait independent coin flips (the clone branch induces
 correlated origins by construction and must be conditioned out or modeled
 separately).
 
-**Model E -- Zero/one/two mutation count.** K ~ Categorical(pi_0, pi_1,
-pi_2), then select K distinct gene slots uniformly and mutate them. *Why
+**Model E -- Zero/one/two mutation count.** $K \sim \text{Categorical}(\pi_0, \pi_1,
+\pi_2)$, then select $K$ distinct gene slots uniformly and mutate them. *Why
 plausible*: covers the unexplored region between exactly-one and
 independent-Bernoulli. *Test*: small but reproducible excess of zero or two
-mutation signatures. *Refute*: posterior concentrates at pi_1 ~ 1.
+mutation signatures. *Refute*: posterior concentrates at $\pi_1 \approx 1$.
 
 **Model F -- Gene-specific mutation-target weights.** Mutation target
-M ~ Categorical(w_1, ..., w_8) with fitted target-selection weights w_j
-(sum = 1) rather than uniform 1/8. *Why plausible*: different
+$M \sim \text{Categorical}(w_1, \ldots, w_8)$ with fitted target-selection weights $w_j$
+(sum $= 1$) rather than uniform $1/8$. *Why plausible*: different
 traits or slots may deliberately mutate at different rates. *Test*: derive
 expected per-trait observable deviation rates from the full generative null
-with w_j = 1/8 (accounting for genotype, recombination, display rule,
+with $w_j = 1/8$ (accounting for genotype, recombination, display rule,
 nudge magnitude, and boundaries) and compare against observed rates.
-*Refute*: high-N data supports w_j = 1/8.
+*Refute*: high-N data supports $w_j = 1/8$.
 
 **Model G -- State-dependent mutation magnitude.** Nudge distribution
-depends on the starting gene value: E[delta | g] proportional to (500 - g)
+depends on the starting gene value: $E[\delta \mid g] \propto (500 - g)$
 (mean-reverting). *Why plausible*: games often use state-dependent adjustment
 to keep values in usable ranges. *Test*: mutations near extremes show inward
 bias beyond clamping prediction. *Refute*: conditional distributions match a
 state-independent kernel.
 
 **Model H -- Local/jump mutation mixture.** With probability
-(1-rho), draw delta ~ Uniform[-R, R]; with probability rho, draw
-delta ~ K_jump (a specified signed jump kernel). The prior rho ~ Beta(1,5)
+$(1-\rho)$, draw $\delta \sim \text{Uniform}[-R, R]$; with probability $\rho$, draw
+$\delta \sim K_{\text{jump}}$ (a specified signed jump kernel). The prior $\rho \sim \text{Beta}(1,5)$
 (Section 4.4) concentrates toward small rho but does not preclude
 moderate values. *Why plausible*: explains
 anomalous children without an arbitrary floor. *Test*: extreme changes
@@ -1727,7 +1718,7 @@ simulation-calibrated prospective prediction or marginal likelihood relative
 to corresponding discrete models.
 
 **Model J -- Cross-trait epistasis.** A displayed trait depends partly on
-genes from another trait: Sweet = f(S1, S2, C1). *Why plausible*: game
+genes from another trait: $\text{Sweet} = f(S_1, S_2, C_1)$. *Why plausible*: game
 designers may create coupled breeding. *Test*: compare the observed joint
 child-trait distribution against the complete CLAIM-predicted joint
 distribution, including dependence induced by the exclusive mutation target
@@ -1740,7 +1731,7 @@ dependence within simulation-calibrated uncertainty and adding epistatic
 terms provides no meaningful prospective predictive improvement.
 
 **Model K -- Child-level environmental factor.** Each child receives latent
-E_i shifting multiple traits: Y_it = f_t(G_it) + beta_t * E_i. *Why
+$E_i$ shifting multiple traits: $Y_{it} = f_t(G_{it}) + \beta_t \cdot E_i$. *Why
 plausible*: location, time, or game state could influence all outputs. *Test*:
 compare observed cross-trait covariance and higher-order dependence against
 the complete CLAIM-generated null. Fit a shared-factor model to the residual
@@ -1761,10 +1752,10 @@ categorical target weights, i.e. a Model-F-type extension.)
 *Why plausible*: Hive1b's clone behavior suggests context-dependent
 mechanics. *Test*: parameter estimates cluster by litter beyond sampling
 variation. *Refute*: Bayes factor comparing the hierarchical model
-(tau > 0) against the fixed-effect model (tau = 0) is below 1/10, or
-P(tau < delta_tau | D) >= 0.95 (equivalently, the 95% upper credible
-bound on tau falls below the preregistered negligible-heterogeneity
-threshold delta_tau). Preregister delta_tau before fitting.
+($\tau > 0$) against the fixed-effect model ($\tau = 0$) is below $1/10$, or
+$P(\tau < \delta_\tau \mid D) \geq 0.95$ (equivalently, the 95% upper credible
+bound on $\tau$ falls below the preregistered negligible-heterogeneity
+threshold $\delta_\tau$). Preregister $\delta_\tau$ before fitting.
 
 **Model M -- Mutation-before-inheritance.** Mutate parental gene copies
 first, then select inherited values. *Why plausible*: implementation order is
@@ -1798,7 +1789,7 @@ state.** A child's trait distribution depends only on currently observable
 parent phenotypes and spatial/environmental covariates. No hidden genes
 exist; the observable phenotype is all there is. For each trait t:
 
-    Y_t = g_t(A_t, B_t, d_A, d_B, N) + noise_t
+$$Y_t = g_t(A_t, B_t, d_A, d_B, N) + \text{noise}_t$$
 
 where A_t, B_t are the displayed parent traits, d_A, d_B are parent
 distances, and N summarizes explicitly measured nearby-tree covariates.
@@ -1832,26 +1823,26 @@ reconstructed from its current phenotype and measured environment alone.
 Split into two testable sub-models:
 
 - **Model P0 -- Phenotype-only, no hidden state.**
-  P(Y | A_phenotype, B_phenotype). Two sub-variants define the joint
+  $P(Y \mid A_{\text{phenotype}}, B_{\text{phenotype}})$. Two sub-variants define the joint
   child-trait law:
 
   **P0-independent** (primary benchmark): traits are conditionally
   independent given parent phenotypes. For each trait t, define latent
-  Z_t ~ Normal(alpha_t * A_t + (1-alpha_t) * B_t, sigma_t), observed
-  Y_t = clip(round(Z_t), 0, 1000). The joint child probability is the
-  product over traits: P(Y) = prod_t P(Y_t). This produces discrete bin
-  probabilities on {0, ..., 1000} compatible with the contamination PMF
-  1001^(-4) and directly comparable to discrete CLAIM PMFs via Bayes
-  factors. Priors: alpha_t ~ Beta(1, 1), sigma_t ~ HalfCauchy(100).
+  $Z_t \sim \text{Normal}(\alpha_t A_t + (1-\alpha_t) B_t, \sigma_t)$, observed
+  $Y_t = \text{clip}(\text{round}(Z_t), 0, 1000)$. The joint child probability is the
+  product over traits: $P(Y) = \prod_t P(Y_t)$. This produces discrete bin
+  probabilities on $\{0, \ldots, 1000\}$ compatible with the contamination PMF
+  $1001^{-4}$ and directly comparable to discrete CLAIM PMFs via Bayes
+  factors. Priors: $\alpha_t \sim \text{Beta}(1, 1)$, $\sigma_t \sim \text{HalfCauchy}(100)$.
 
   **P0-coupled** (sensitivity variant): traits follow an equicorrelated
-  multivariate Normal. Define Z = (Z_1, ..., Z_4) ~ Normal_4(mu, Sigma)
-  where mu_t = alpha_t * A_t + (1-alpha_t) * B_t, Sigma_ii = sigma_t^2,
-  and Sigma_ij = rho * sigma_i * sigma_j for i != j. The equicorrelation
-  parameter rho has support (-1/(K-1), 1) for K=4 traits (strict
+  multivariate Normal. Define $Z = (Z_1, \ldots, Z_4) \sim \text{Normal}_4(\mu, \Sigma)$
+  where $\mu_t = \alpha_t A_t + (1-\alpha_t) B_t$, $\Sigma_{ii} = \sigma_t^2$,
+  and $\Sigma_{ij} = \rho \sigma_i \sigma_j$ for $i \neq j$. The equicorrelation
+  parameter $\rho$ has support $(-1/(K-1), 1)$ for $K=4$ traits (strict
   inequalities to guarantee positive definiteness). Prior:
-  rho ~ Uniform(-1/3, 1) truncated to the open interval.
-  Observed Y_t = clip(round(Z_t), 0, 1000). This separates the
+  $\rho \sim \text{Uniform}(-1/3, 1)$ truncated to the open interval.
+  Observed $Y_t = \text{clip}(\text{round}(Z_t), 0, 1000)$. This separates the
   state-sufficiency test from the independence assumption: rejecting
   P0-independent but not P0-coupled would suggest that the independence
   restriction, not state sufficiency per se, drove the rejection
@@ -1889,7 +1880,7 @@ Split into two testable sub-models:
   environmental confounds.
 
 - **Model P1 -- Phenotype + spatial/environmental state.**
-  P(Y | A_phenotype, B_phenotype, d_A, d_B, N). Requires new controlled
+  $P(Y \mid A_{\text{phenotype}}, B_{\text{phenotype}}, d_A, d_B, N)$. Requires new controlled
   spatial data not present in the current dataset.
 
 ### 4.12 Designed Verification Experiments
@@ -1903,7 +1894,7 @@ parental genotypes using Hive1a data rather than selecting a single optimum.
 (Hive1a/b/c share the same parent pair.) Predict Hive1b/1c by integrating
 over that genotype uncertainty:
 
-    p(D_target | D_train, M) = integral p(D_target | G, phi, M) p(G, phi | D_train, M) dG dphi
+$$p(D_{\text{target}} \mid D_{\text{train}}, M) = \int p(D_{\text{target}} \mid G, \phi, M) \, p(G, \phi \mid D_{\text{train}}, M) \, dG \, d\phi$$
 
 where D_train denotes the designated training data. **Data-leakage
 constraint**: D_train must not include any litter that shares a parent
@@ -1918,8 +1909,8 @@ states, and phi contains additional nuisance parameters whose uncertainty
 must propagate. Under frequentist
 analysis, retain the profile-supported genotype set: all genotype
 configurations G for which the profile log-likelihood satisfies
-l(G) >= l(G_hat) - c/2, where c is the simulation-calibrated cutoff
-for the joint genotype configuration (not the chi2_1 approximation,
+$l(G) \geq l(\hat{G}) - c/2$, where $c$ is the simulation-calibrated cutoff
+for the joint genotype configuration (not the $\chi^2_1$ approximation,
 which is invalid for the high-dimensional, discrete, bounded, and
 potentially non-identifiable latent space). Calibrate c by simulation:
 generate data from the fitted model, enumerate genotype support sets
@@ -1944,7 +1935,7 @@ D_train -- e.g. if Hive1b is the target, Hive1c shares both target
 parents and must also be excluded from clone-rate estimation) and
 integrate the target litter's unknown clone fraction out when computing
 the predictive score, or
-(c) use the primary Bayesian treatment: independent c_l ~ Beta(1, 9) per
+(c) use the primary Bayesian treatment: independent $c_l \sim \text{Beta}(1, 9)$ per
 litter (matching the prior in Section 4.4) and integrate c_l out of the
 predictive distribution for the target litter.
 Option (b) is preferred if litter-to-litter clone variation is
@@ -1974,7 +1965,7 @@ model and estimate parent-role effects conditional on spatial covariates
 (combining with Experiment 3), or (c) use a game mechanic that assigns
 parent roles without spatial rearrangement if one exists. Test whether
 offspring distributions are exchangeable under reversal. Metric:
-parametric-bootstrap likelihood-ratio statistic comparing q=0.5 to
+parametric-bootstrap likelihood-ratio statistic comparing $q=0.5$ to
 role-specific inheritance probabilities (asymptotic chi-squared
 calibration is not guaranteed with discrete latent variables and fitted
 nuisance parameters).
@@ -1983,7 +1974,7 @@ nuisance parameters).
 Same parental trees, multiple child positions at controlled distances and
 directions. Test whether inheritance probability depends on parent-child
 geometry. Metric: put geometry directly into the generative model (e.g.
-P(O_{t,s}=A | x) = logit^-1(beta_0 + beta^T x)) for each trait t and
+$P(O_{t,s}=A \mid x) = \text{logit}^{-1}(\beta_0 + \beta^T x)$) for each trait $t$ and
 gene slot s (or specify whether geometry coefficients are global,
 trait-specific, or slot-specific), and integrate over latent parental
 origin when evaluating observed child traits, rather than
@@ -2018,7 +2009,7 @@ unmeasured state changes. Preregister one primary difference-in-differences cont
 defined scalar endpoint (e.g., per-child average trait deviation from
 the cross-specific mean, or proper log-score under the fitted model):
 for each matched reset/control cycle pair, compute
-Delta = (post - pre)_reset - (late - early)_control on the primary
+$\Delta = (\text{post} - \text{pre})_{\text{reset}} - (\text{late} - \text{early})_{\text{control}}$ on the primary
 endpoint, then test whether the average Delta differs from zero using
 a paired permutation test (cycle-level sign-flipping, which requires
 counterbalancing or randomizing reset/control assignment order across
@@ -2048,7 +2039,7 @@ corrections. This should happen before sophisticated new modeling.
 For every litter, swap all A/B parent columns and rerun the entire fitting
 and scoring pipeline. For symmetric-inheritance models, the predicted
 probability distribution must be invariant under parent relabeling: scores
-must agree within a tight numerical tolerance (e.g., |delta score| < 1e-8) and
+must agree within a tight numerical tolerance (e.g., $|\Delta \text{score}| < 10^{-8}$) and
 fitted genotypes must be equivalent after A/B relabeling (operationally:
 equal optimized score plus equal predictive distribution, or membership
 in the same observational-equivalence class after relabeling). Bitwise equality
@@ -2065,7 +2056,7 @@ rather than freezing point estimates), and evaluation metric. Collect
 offspring and score once. Use a proper contamination likelihood and a
 preregistered scoring rule. The prospective Bayes factor is defined as:
 
-    BF^new_{C,A} = p(D_new | D_train, X_new, C) / p(D_new | D_train, X_new, A)
+$$\text{BF}^{\text{new}}_{C,A} = \frac{p(D_{\text{new}} \mid D_{\text{train}}, X_{\text{new}}, C)}{p(D_{\text{new}} \mid D_{\text{train}}, X_{\text{new}}, A)}$$
 
 using predictive distributions frozen before observing D_new. No parameter
 or latent-state refitting on prospective outcomes is allowed before this
@@ -2101,23 +2092,25 @@ replicate; define JSD from the selected or model-averaged predictive.
 Use the same family/selector in both versions.
 Preregister a specific predictive-distribution distance statistic:
 fit version-specific predictive models on each version's data
-separately, freeze them, then compute JSD(P_version1(. | X),
-P_version2(. | X)) directly over the outcome support at each matched
+separately, freeze them, then compute $\text{JSD}(P_{\text{version1}}(\cdot \mid X),
+P_{\text{version2}}(\cdot \mid X))$ directly over the outcome support at each matched
 design point X (crosses run in both versions) and average using fixed
 design weights. The equivalence decision rule: authorize pooling only
-if the preregistered one-sided (1-alpha) upper confidence bound U on
-the weighted averaged JSD satisfies U < delta_JSD (e.g.,
-delta_JSD = 0.01 nats per child, alpha = 0.05). Bootstrap the
+if the preregistered one-sided $(1-\alpha)$ upper confidence bound $U$ on
+the weighted averaged JSD satisfies $U < \delta_{\text{JSD}}$ (e.g.,
+$\delta_{\text{JSD}} = 0.01$ nats per child, $\alpha = 0.05$). Bootstrap the
 complete fit-plus-JSD procedure using matched pedigree components as
 the bootstrap unit (not individual children), preserving the
 cross-level dependence structure and version matching; use the BCa (bias-corrected and accelerated) bootstrap to compute the
-one-sided upper bound U: compute the bias-correction constant z_0 from
+one-sided upper bound $U$: compute the bias-correction constant $z_0$ from
 the proportion of bootstrap replicates below the original estimate, and
-compute the acceleration constant a using the leave-one-matched-
+compute the acceleration constant $a$ using the leave-one-matched-
 pedigree-component-out jackknife of the complete fit-plus-JSD estimator:
-let theta-hat_(-i) be the estimator with pedigree component i removed;
-a = [sum_i (theta-bar - theta-hat_(-i))^3] / [6 * (sum_i (theta-bar
-- theta-hat_(-i))^2)^(3/2)] where theta-bar is the mean of the
+let $\hat{\theta}_{(-i)}$ be the estimator with pedigree component $i$ removed;
+
+$$a = \frac{\sum_i (\bar{\theta} - \hat{\theta}_{(-i)})^3}{6 \left(\sum_i (\bar{\theta} - \hat{\theta}_{(-i)})^2\right)^{3/2}}$$
+
+where $\bar{\theta}$ is the mean of the
 jackknife values. Preregister the replicate count (minimum B_boot = 999). If exact
 computation of JSD over the full four-trait support is computationally
 prohibitive (dense support under contamination), preregister a sparse-
@@ -2138,10 +2131,9 @@ when cross-tale equivalence passes.
 
 ## 5. Research Roadmap
 
-Reordered based on adversarial review. The principle: establish data quality
-and exploit existing structure before building new models; replace heuristic
-scoring before formal model comparison; test genuinely different
-architectures before refining parameters.
+The principle: establish data quality and exploit existing structure before
+building new models; replace heuristic scoring before formal model comparison;
+test genuinely different architectures before refining parameters.
 
 ### Tier 0: Data Integrity (hours, existing data)
 
@@ -2189,7 +2181,7 @@ Do these before anything else.
 
 ### Tier 2: Fix the Scoring Framework (days, new code)
 
-10. **Contamination likelihood** -- replace the 1e-15 floor with the
+10. **Contamination likelihood** -- replace the $10^{-15}$ floor with the
     primary baseline observation model (see Section 3.2 M2). This is
     prerequisite for all subsequent model comparison (Bayesian or
     frequentist).
@@ -2348,10 +2340,10 @@ language rather than binary confirmation. Quantitative thresholds
    points are excluded; see false-CLAIM event definition).
    Use one-sided exact Clopper-Pearson confidence bounds for both
    recovery and false-CLAIM probabilities, with per-cell confidence
-   level set to 1 - alpha/m (where alpha = 0.05 and m is the number
+   level set to $1 - \alpha/m$ (where $\alpha = 0.05$ and $m$ is the number
    of non-equivalent cells), ensuring simultaneous coverage.
    Bounds apply simultaneously for every prespecified stress-test
-   cell (each distinct M_true x theta_true combination in the
+   cell (each distinct $M_{\text{true}} \times \theta_{\text{true}}$ combination in the
    benchmark grid). "Materially different" is operationalized by
    the grid-construction rule: the stress-test grid must include
    (a) each architecture in the preregistered G_stress set (P1 is
@@ -2381,19 +2373,19 @@ language rather than binary confirmation. Quantitative thresholds
    frozen design distribution Q(X, W) over the required covariates
    and integrate accordingly.
    **Benchmark discriminator diagnostics**: For each stress-test cell
-   (architecture A, parameter theta_true), define explicit diagnostic
-   simulation distributions: P^diag_{A,c}(D) -- data generated by the
-   alternative generator with theta_true fixed at the stress-cell value
+   (architecture $A$, parameter $\theta_{\text{true}}$), define explicit diagnostic
+   simulation distributions: $P^{\text{diag}}_{A,c}(D)$ -- data generated by the
+   alternative generator with $\theta_{\text{true}}$ fixed at the stress-cell value
    and shared nuisance variables (sample size, parent design, contamination)
-   drawn from the preregistered scheme; and P^diag_C(D) -- data generated
+   drawn from the preregistered scheme; and $P^{\text{diag}}_C(D)$ -- data generated
    by CLAIM with the same shared nuisance scheme but CLAIM's MLE parameters.
    Architecture-specific latent states and mechanism parameters are
-   generated under each architecture's own law. Compute T = log p(D|A) -
-   log p(D|C) from these two fully specified distributions, fixing which
+   generated under each architecture's own law. Compute $T = \log p(D \mid A) -
+   \log p(D \mid C)$ from these two fully specified distributions, fixing which
    quantities are fixed at their stress-cell values and marginalizing the
    rest under the preregistered nuisance distribution. Preregister this
    specification before running any simulations. For each stress-test cell,
-   compute a simulation-calibrated benchmark discriminator statistic T and
+   compute a simulation-calibrated benchmark discriminator statistic $T$ and
    measure its empirical power at a 10% false-positive threshold (using the 90th empirical quantile of T under
    B_null CLAIM-null simulations as the threshold c, where rank k =
    ceil(0.90 * B_null) ensures a nominal exceedance rate at most 10%
@@ -2443,16 +2435,16 @@ language rather than binary confirmation. Quantitative thresholds
    Guarantees apply only to the covered region of the parameter
    space. Separate per-cell 95% bounds
    do not provide 95% joint coverage (with m cells, joint coverage
-   can be as low as 0.95^m). Use a simultaneous procedure: either
-   Bonferroni-adjusted one-sided bounds at level 1 - alpha/m per cell
-   (where alpha = 0.05 and m is the number of cells), or a
+   can be as low as $0.95^m$). Use a simultaneous procedure: either
+   Bonferroni-adjusted one-sided bounds at level $1 - \alpha/m$ per cell
+   (where $\alpha = 0.05$ and $m$ is the number of cells), or a
    simulation-based simultaneous confidence band. Choose simulation
    replicates per cell based on the adjusted confidence level.
    Averaging across easy settings could conceal dangerous regions;
    the simultaneous worst-cell guarantee is required.
    Note on error budgets: the benchmark discriminator diagnostic
    (false-positive threshold, CI on discriminator power) and the
-   final false-CLAIM simultaneous guarantee (alpha = 0.05 over m
+   final false-CLAIM simultaneous guarantee ($\alpha = 0.05$ over $m$
    cells) are separate frequentist statements; no joint 95% guarantee
    across both is claimed. Each provides its own stated coverage for
    its own estimand.
@@ -2508,15 +2500,15 @@ language rather than binary confirmation. Quantitative thresholds
    included in the Tier-5 design. Tier 0 ascertainment audit is still
    required as a prerequisite for using historical data in exploratory
    analysis. Preregister K >= 1 target litters from the same parent
-   pair as D_train. The general K-target joint predictive score is:
-   log p(D_1,...,D_K | D_train) = log integral p(G, phi_shared | D_train)
-     * prod_{k=1}^K [ integral p(D_k | G, phi_k, phi_shared)
-                       p(phi_k | phi_shared) d phi_k ] dG d phi_shared
-   integrating shared parental genotype G and shared nuisance phi_shared
-   once; integrating each litter-specific phi_k separately. If the
+   pair as $D_{\text{train}}$. The general $K$-target joint predictive score is:
+
+$$\log p(D_1,\ldots,D_K \mid D_{\text{train}}) = \log \int p(G, \phi_{\text{shared}} \mid D_{\text{train}}) \prod_{k=1}^K \left[ \int p(D_k \mid G, \phi_k, \phi_{\text{shared}}) \, p(\phi_k \mid \phi_{\text{shared}}) \, d\phi_k \right] dG \, d\phi_{\text{shared}}$$
+
+   integrating shared parental genotype $G$ and shared nuisance $\phi_{\text{shared}}$
+   once; integrating each litter-specific $\phi_k$ separately. If the
    formal criterion uses only independent clone priors (phi_k independent
-   of phi_shared), the product terms simplify to integral p(D_k|G,phi_k)
-   p(phi_k) d phi_k -- but this must be preregistered. Preregister K
+   of $\phi_{\text{shared}}$), the product terms simplify to $\int p(D_k \mid G, \phi_k)
+   \, p(\phi_k) \, d\phi_k$ -- but this must be preregistered. Preregister K
    and whether testing is joint (single K-litter score) or separate
    (each target litter scored individually with Bonferroni adjustment)
    before any outcomes are observed. The historical example (Hive1a as
@@ -2537,15 +2529,15 @@ language rather than binary confirmation. Quantitative thresholds
    preregistered practically important departures or an equivalence-style
    bound on the discrepancy statistic), and preregistered prospective tests
 4. CLAIM predicts prospectively collected data (new in-game crosses,
-   minimum N >= 100 children from >= 3 new parent pairs) with a
-   frozen-posterior-predictive Bayes factor BF^new_{C,A} >= 10 (as
+   minimum $N \geq 100$ children from $\geq 3$ new parent pairs) with a
+   frozen-posterior-predictive Bayes factor $\text{BF}^{\text{new}}_{C,A} \geq 10$ (as
    defined in Experiment 8) over every architecture in a preregistered
    alternative set A_prospective (not just CLAIM parameter variants):
-   min_{A in A_prospective} BF^new_{C,A} >= 10, where
-   BF_{A,C} = p(D_train | A) / p(D_train | C) and
-   A_prospective = {A in A_fit : BF_{A,C} > 0.01 under the primary
-   preregistered prior} plus the single strongest training-data rival
-   (the A in A_fit maximizing BF_{A,C} under the primary prior;
+   $\min_{A \in A_{\text{prospective}}} \text{BF}^{\text{new}}_{C,A} \geq 10$, where
+   $\text{BF}_{A,C} = p(D_{\text{train}} \mid A) / p(D_{\text{train}} \mid C)$ and
+   $A_{\text{prospective}} = \{A \in A_{\text{fit}} : \text{BF}_{A,C} > 0.01 \text{ under the primary}$
+   $\text{preregistered prior}\}$ plus the single strongest training-data rival
+   (the $A \in A_{\text{fit}}$ maximizing $\text{BF}_{A,C}$ under the primary prior;
    includes all co-maximizers within the preregistered numerical log-
    evidence tolerance). A_prospective membership must also be
    recomputed under every preregistered prior configuration in the
@@ -2565,11 +2557,11 @@ language rather than binary confirmation. Quantitative thresholds
    frozen predictive distribution must be locked before collecting
    D_new. Selecting the "best alternative" after inspecting D_new would
    invalidate the preregistered pairwise BF. **Note on composite
-   alternatives**: a frozen composite p(D_new | A_mix) =
-   sum_{A in A_prospective} pi_A * p(D_new | D_train, X_new, A)
-   with preregistered weights pi_A normalized over exactly A_prospective
+   alternatives**: a frozen composite $p(D_{\text{new}} \mid A_{\text{mix}}) =
+   \sum_{A \in A_{\text{prospective}}} \pi_A \cdot p(D_{\text{new}} \mid D_{\text{train}}, X_{\text{new}}, A)$
+   with preregistered weights $\pi_A$ normalized over exactly $A_{\text{prospective}}$
    is a weaker criterion: CLAIM can beat the model-averaged alternative
-   while still losing to a constituent with small pi_A weight. If the
+   while still losing to a constituent with small $\pi_A$ weight. If the
    intended conclusion is "CLAIM beats every rival," retain the
    pairwise-minimum condition. If using composite, the supported
    conclusion is "CLAIM beats the preregistered model-averaged

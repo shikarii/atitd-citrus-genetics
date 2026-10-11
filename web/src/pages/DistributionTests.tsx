@@ -3,6 +3,7 @@ import { MetricCard } from "../components/MetricCard";
 import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
+import { NoData } from "../components/NoData";
 import { loadDistributionTests, type DistributionTest, TRAITS, LITTERS } from "../lib/data";
 import { CHART_COLORS } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -21,9 +22,13 @@ const columns: ColumnDef<DistributionTest, unknown>[] = [
 
 export function DistributionTests() {
   const [data, setData] = useState<DistributionTest[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDistributionTests().then(setData).catch(() => {});
+    loadDistributionTests()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const nSigFDR = data.filter((d) => d.ks_sig_fdr).length;
@@ -47,6 +52,15 @@ export function DistributionTests() {
     );
     return { heatmapZ: z, heatmapText: text };
   }, [data]);
+
+  if (!loading && data.length === 0) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">Distribution Goodness-of-Fit Tests</h1>
+        <NoData />
+      </div>
+    );
+  }
 
   return (
     <div>

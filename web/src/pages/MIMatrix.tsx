@@ -2,15 +2,20 @@ import { useEffect, useState, useMemo } from "react";
 import { MetricCard } from "../components/MetricCard";
 import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
+import { NoData } from "../components/NoData";
 import { loadMIMatrix, type MIEntry, TRAITS } from "../lib/data";
 
 const PARENT_VARS = TRAITS.flatMap((t) => [`A_${t}`, `B_${t}`]);
 
 export function MIMatrix() {
   const [data, setData] = useState<MIEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadMIMatrix().then(setData).catch(() => {});
+    loadMIMatrix()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const { heatmapZ, heatmapX, heatmapY, maxExcess, nHighZ } = useMemo(() => {
@@ -40,6 +45,15 @@ export function MIMatrix() {
   const meanDiagExcess = diagonalEntries.length > 0
     ? (diagonalEntries.reduce((s, e) => s + e.mi_excess, 0) / diagonalEntries.length)
     : 0;
+
+  if (!loading && data.length === 0) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">Mutual Information Matrix</h1>
+        <NoData />
+      </div>
+    );
+  }
 
   return (
     <div>

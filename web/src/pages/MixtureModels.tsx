@@ -3,6 +3,7 @@ import { MetricCard } from "../components/MetricCard";
 import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
+import { NoData } from "../components/NoData";
 import { loadMixtureWeights, type MixtureWeight } from "../lib/data";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -19,9 +20,13 @@ const columns: ColumnDef<MixtureWeight, unknown>[] = [
 
 export function MixtureModels() {
   const [data, setData] = useState<MixtureWeight[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadMixtureWeights().then(setData).catch(() => {});
+    loadMixtureWeights()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const meanPi = data.length > 0
@@ -30,6 +35,15 @@ export function MixtureModels() {
   const minPi = data.length > 0 ? Math.min(...data.map((d) => d.pi_claim)) : 0;
   const nLow = data.filter((d) => d.pi_claim < 0.7).length;
   const sorted = [...data].sort((a, b) => a.pi_claim - b.pi_claim);
+
+  if (!loading && data.length === 0) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">CLAIM + INDEP Mixture Models</h1>
+        <NoData />
+      </div>
+    );
+  }
 
   return (
     <div>

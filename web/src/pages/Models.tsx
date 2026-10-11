@@ -3,6 +3,7 @@ import { MetricCard } from "../components/MetricCard";
 import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
+import { NoData } from "../components/NoData";
 import { loadModelComparison, type ModelComparison } from "../lib/data";
 import { CHART_COLORS } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -24,9 +25,13 @@ const columns: ColumnDef<ModelComparison, unknown>[] = [
 
 export function Models() {
   const [data, setData] = useState<ModelComparison[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadModelComparison().then(setData).catch(() => {});
+    loadModelComparison()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const sorted = [...data].sort((a, b) => b.cv_ll - a.cv_ll);
@@ -34,6 +39,15 @@ export function Models() {
   const second = sorted[1];
   const gap = best && second ? (best.cv_ll - second.cv_ll).toFixed(1) : "...";
   const nImpossible = data.filter((m) => m.children_impossible > 0).length;
+
+  if (!loading && data.length === 0) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">30-Model Comparison</h1>
+        <NoData />
+      </div>
+    );
+  }
 
   return (
     <div>

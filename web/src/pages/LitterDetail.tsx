@@ -4,6 +4,7 @@ import { MetricCard } from "../components/MetricCard";
 import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
+import { NoData } from "../components/NoData";
 import {
   loadChildren,
   loadFittedGenes,
@@ -53,12 +54,15 @@ export function LitterDetail() {
   const [genes, setGenes] = useState<FittedGenes[]>([]);
   const [residuals, setResiduals] = useState<ResidualEntry[]>([]);
   const [anomalies, setAnomalies] = useState<AnomalyScore[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadChildren().then(setChildren).catch(() => {});
-    loadFittedGenes().then(setGenes).catch(() => {});
-    loadResiduals().then(setResiduals).catch(() => {});
-    loadAnomalyScores().then(setAnomalies).catch(() => {});
+    Promise.all([
+      loadChildren().then(setChildren).catch(() => {}),
+      loadFittedGenes().then(setGenes).catch(() => {}),
+      loadResiduals().then(setResiduals).catch(() => {}),
+      loadAnomalyScores().then(setAnomalies).catch(() => {}),
+    ]).finally(() => setLoading(false));
   }, []);
 
   const litterChildren = children.filter((c) => c.litter === name);
@@ -68,6 +72,15 @@ export function LitterDetail() {
 
   if (!name) {
     return <div className="text-slate-500">No litter selected.</div>;
+  }
+
+  if (!loading && children.length === 0) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">{name}</h1>
+        <NoData />
+      </div>
+    );
   }
 
   const firstChild = litterChildren[0];

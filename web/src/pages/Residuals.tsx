@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MetricCard } from "../components/MetricCard";
 import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
+import { NoData } from "../components/NoData";
 import {
   loadResiduals,
   loadSiblingCorrelations,
@@ -14,10 +15,13 @@ import { CHART_COLORS } from "../lib/colors";
 export function Residuals() {
   const [residuals, setResiduals] = useState<ResidualEntry[]>([]);
   const [sibCorr, setSibCorr] = useState<SiblingCorrelation[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadResiduals().then(setResiduals).catch(() => {});
-    loadSiblingCorrelations().then(setSibCorr).catch(() => {});
+    Promise.all([
+      loadResiduals().then(setResiduals).catch(() => {}),
+      loadSiblingCorrelations().then(setSibCorr).catch(() => {}),
+    ]).finally(() => setLoading(false));
   }, []);
 
   const traitResiduals = TRAITS.map((t) => ({
@@ -35,6 +39,15 @@ export function Residuals() {
     : 0;
 
   const nSigCorr = sibCorr.filter((s) => s.p_value < 0.05).length;
+
+  if (!loading && residuals.length === 0) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">Residual Analysis</h1>
+        <NoData />
+      </div>
+    );
+  }
 
   return (
     <div>

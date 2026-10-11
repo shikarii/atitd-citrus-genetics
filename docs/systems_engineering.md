@@ -91,15 +91,19 @@ ATITD Citrus Genetics is a full-stack analytics platform for validating and expl
 
 **Rationale:** Automatic OpenAPI schema generation, Pydantic model validation at API boundaries. The analytics results are served as JSON endpoints consumed by the React dashboard. The OpenAPI schema is the normative API contract (Section 5.2). Async is not needed for this workload — FastAPI is chosen for its schema generation and validation, not for concurrency.
 
-### 2.4 Frontend: React 18 + TypeScript
+### 2.4 Frontend: React 18 + TypeScript (Static Site)
 
-**Rationale:** Component-based UI for interactive charts and data tables. TypeScript types are generated from the FastAPI OpenAPI schema (Section 5.2) to prevent drift. Vite for fast dev builds.
+**Rationale:** Component-based UI for interactive scientific charts and data tables.
+Deployed as a static site on GitHub Pages — no backend server required. Pre-computed
+analysis results are bundled as JSON in `web/public/data/` and fetched at runtime.
+Vite for fast dev builds. HashRouter for SPA routing compatibility with static hosting.
 
 **Key libraries:**
-- **Recharts** — Declarative charting for model comparison bar charts and distribution plots
-- **TanStack Table** — Headless table for sortable/filterable model comparison and fitted gene tables
-- **TanStack Query** — Server state management with caching for API responses
-- **openapi-typescript** — Generates TypeScript types from the OpenAPI schema at build time
+- **Plotly.js** (`plotly.js-dist-min` + `react-plotly.js/factory`) — Interactive scientific charts (heatmaps, scatter, bar, box). Uses the pre-built browser bundle to avoid Node.js polyfill issues.
+- **TanStack Table** — Headless table for sortable/filterable data tables with CSV export
+- **Marked** + **KaTeX** + **Prism** + **Mermaid** — Markdown rendering pipeline with LaTeX math, syntax highlighting, and diagram support (adapted from claude-devtools)
+- **DOMPurify** — HTML sanitization for rendered markdown content
+- **Tailwind CSS v4** (`@tailwindcss/vite`) — Utility-first CSS with custom teal split-complementary palette
 
 ### 2.5 Reverse Proxy: nginx
 
@@ -1513,12 +1517,18 @@ This table lists primary dependencies. Additional libraries (Recharts, TanStack 
 - **Add `docker-smoke` CI job**
 - **Add `python-quality` GitHub Actions job**
 
-### Phase 3: React Dashboard
-- Scaffold React + TypeScript + Vite
-- Generate TS types from openapi.json at build time (not committed)
-- Model comparison, litter explorer, plug-in predictive check charts
-- **Add `web-quality` CI job (lint + format-check + test)**
-- `make quality` (Python + web) becomes the full gate
+### Phase 3: React Dashboard (COMPLETE)
+- Scaffolded React 18 + TypeScript (strict) + Vite + Tailwind CSS v4
+- Static site deployment on GitHub Pages (HashRouter, no backend required)
+- Pre-computed analysis JSON bundled in `web/public/data/`
+- 11 pages: Landing (abstract), Methodology (KaTeX + Mermaid), 8 result views, Litter detail
+- Interactive Plotly.js charts (heatmaps, scatter, bar, box) with teal split-complementary palette
+- Markdown rendering pipeline: marked + KaTeX + Prism + Mermaid + DOMPurify
+- Lazy page loading (React.lazy + Suspense) for code splitting
+- ErrorBoundary for runtime error visibility
+- NoData component for graceful handling of missing analysis artifacts
+- GitHub Actions deploy workflow (path-filtered on web/ changes)
+- Branch protection: require PR reviews, dismiss stale reviews, no force push
 
 ### Phase 4: Validation Suite + Release Gates
 - Implement run provenance with atomic publication (Section 9.4)
@@ -1533,6 +1543,48 @@ This table lists primary dependencies. Additional libraries (Recharts, TanStack 
 - Additional statistical tests
 - Historical dataset comparison
 
-## 16. Related Documents
+## 16. Web Dashboard Architecture
+
+### 16.1 Deployment
+
+Static site hosted on GitHub Pages at `https://shikarii.github.io/atitd-citrus-genetics/`.
+Built with Vite (`base: "/atitd-citrus-genetics/"`) and deployed via GitHub Actions
+(`actions/deploy-pages@v4`). HashRouter used for SPA routing compatibility with static
+hosting (GitHub Pages does not support server-side rewrites).
+
+### 16.2 Data Pipeline
+
+Analysis results flow: `make run-all-fast` (Python pipeline) -> `make export-data`
+(CSV-to-JSON conversion) -> `web/public/data/*.json` (committed to repo) -> Vite bundles
+into static assets. The deploy workflow only builds the Node.js app; it does not run the
+Python pipeline. New analysis data requires a local pipeline run + export + commit.
+
+### 16.3 Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| `plotly.js-dist-min` over `plotly.js` | Full plotly.js imports Node.js builtins (buffer, stream, assert) that Vite externalizes as empty browser stubs, causing runtime crashes. The `-dist-min` package is a pre-built browser bundle. |
+| `react-plotly.js/factory` pattern | Required when using `plotly.js-dist-min` — creates the Plot component from the Plotly instance instead of importing the default export. |
+| Lazy page loading (`React.lazy`) | All 11 pages load on demand via `Suspense`. Prevents the 4.8 MB plotly chunk from blocking initial shell render. Index chunk: 183 KB (vs 623 KB without lazy loading). |
+| Static JSON over API | GitHub Pages is free hosting with no server cost. Pre-computed results change rarely (only when analysis pipeline runs). Eliminates FastAPI/Docker/nginx deployment complexity. |
+| HashRouter over BrowserRouter | GitHub Pages returns 404 for non-root paths. HashRouter puts routes after `#` so the server always serves `index.html`. |
+| Light theme code blocks (greyscale) | Matches the white research publication aesthetic. Prism token colors use the teal/slate palette for visual cohesion. |
+| Mermaid diagrams (light theme) | `theme: "base"` with teal `themeVariables` for consistency with the overall palette. Dynamically imported to avoid bundling in the initial chunk. |
+
+### 16.4 Known Issues and Backlog
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| Missing analysis data files | Open | Only model_comparison, fitted_genes, children, run_meta are exported. MI matrix, anomaly scores, residuals, R sweep, distribution tests, mixture weights, sibling correlations, trait cooccurrence require running `make run-all-fast && make export-data`. |
+| Self-hosted runner not configured | Open | Deploy workflow uses `ubuntu-latest`. Self-hosted runner added to `ci-infra/docker-compose.yml` but not yet started. Switch `runs-on` back to `self-hosted` once runner is active. |
+| Quality Gate CI failing | Open | Pre-existing quality gate workflow fails on push. Separate from deploy workflow. |
+| Methodology meta-references | Fixed | Removed "Reordered based on adversarial review" from Section 5 roadmap preamble. |
+| Provenance Chain ASCII art | Fixed | Converted to Mermaid flowchart diagram in Section 1.4. |
+| plotly.js white page crash | Fixed | Switched to `plotly.js-dist-min` browser bundle. Root cause: Vite externalized Node.js builtins as empty stubs. |
+| Empty chart pages | Fixed | Added NoData component with loading states. Pages show "Data Not Available" instead of empty charts when JSON files are missing. |
+
+## 17. Related Documents
+
+- [Original README](../README.md) — upstream project description and results summary
 
 - [Original README](../README.md) — upstream project description and results summary

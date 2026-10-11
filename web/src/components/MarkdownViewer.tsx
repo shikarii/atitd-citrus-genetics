@@ -18,8 +18,9 @@ export function MarkdownViewer({ markdown, sanitize, onRendered }: MarkdownViewe
       sanitize: sanitize === true,
     });
     el.innerHTML = html;
-    postProcessDom(el, placeholders);
-    onRendered?.(el);
+    postProcessDom(el, placeholders, { mermaid: true }).then(() => {
+      onRendered?.(el);
+    });
   }, [markdown, sanitize, onRendered]);
 
   return <div ref={containerRef} className="prose-research text-slate-700 leading-relaxed" />;

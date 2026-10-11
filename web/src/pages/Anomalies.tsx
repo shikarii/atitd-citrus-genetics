@@ -3,6 +3,7 @@ import { MetricCard } from "../components/MetricCard";
 import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
+import { NoData } from "../components/NoData";
 import { loadAnomalyScores, type AnomalyScore, TRAITS } from "../lib/data";
 import { CHART_COLORS } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -28,9 +29,13 @@ const columns: ColumnDef<AnomalyScore, unknown>[] = [
 
 export function Anomalies() {
   const [data, setData] = useState<AnomalyScore[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadAnomalyScores().then(setData).catch(() => {});
+    loadAnomalyScores()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const sorted = [...data].sort((a, b) => a.log_lik - b.log_lik);
@@ -41,6 +46,15 @@ export function Anomalies() {
     : 0;
 
   const litters = [...new Set(data.map((d) => d.litter))].sort();
+
+  if (!loading && data.length === 0) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">Per-Child Anomaly Scores</h1>
+        <NoData />
+      </div>
+    );
+  }
 
   return (
     <div>

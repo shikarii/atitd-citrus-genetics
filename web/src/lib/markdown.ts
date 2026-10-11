@@ -1,4 +1,4 @@
-/** Markdown rendering pipeline: marked + KaTeX + Prism + DOMPurify. */
+/** Markdown rendering pipeline: marked + KaTeX + Prism + Mermaid + DOMPurify. */
 
 import { marked } from "marked";
 import DOMPurify from "dompurify";
@@ -12,6 +12,10 @@ interface MathPlaceholder {
 
 export interface RenderOptions {
   sanitize?: boolean;
+}
+
+export interface PostProcessOptions {
+  mermaid?: boolean;
 }
 
 const SANITIZE_TAGS = [
@@ -145,10 +149,56 @@ function highlightCode(container: HTMLElement): void {
   Prism.highlightAllUnder(container);
 }
 
-export function postProcessDom(
+let mermaidCounter = 0;
+
+async function renderMermaidBlocks(container: HTMLElement): Promise<void> {
+  const blocks = container.querySelectorAll<HTMLElement>("code.language-mermaid");
+  if (blocks.length === 0) return;
+
+  const mermaid = (await import("mermaid")).default;
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "base",
+    themeVariables: {
+      primaryColor: "#CCFBF1",
+      primaryTextColor: "#134E4A",
+      primaryBorderColor: "#0D9488",
+      lineColor: "#94A3B8",
+      secondaryColor: "#F1F5F9",
+      tertiaryColor: "#F0FDFA",
+      fontFamily: "Inter, system-ui, sans-serif",
+      fontSize: "14px",
+    },
+  });
+
+  for (const codeEl of blocks) {
+    const source = codeEl.textContent;
+    if (!source) continue;
+    const pre = codeEl.closest("pre");
+    const wrapper = pre?.closest(".code-wrapper") ?? pre;
+    if (!wrapper) continue;
+
+    const id = `mermaid-${++mermaidCounter}`;
+    try {
+      const { svg } = await mermaid.render(id, source);
+      const div = document.createElement("div");
+      div.className = "mermaid-container";
+      div.innerHTML = svg;
+      wrapper.parentNode?.replaceChild(div, wrapper);
+    } catch {
+      // Gracefully degrade to code block on error
+    }
+  }
+}
+
+export async function postProcessDom(
   container: HTMLElement,
   placeholders: MathPlaceholder[],
-): void {
+  opts: PostProcessOptions = {},
+): Promise<void> {
   restoreMath(container, placeholders);
   highlightCode(container);
+  if (opts.mermaid !== false) {
+    await renderMermaidBlocks(container);
+  }
 }

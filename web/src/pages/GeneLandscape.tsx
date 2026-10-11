@@ -3,6 +3,7 @@ import { MetricCard } from "../components/MetricCard";
 import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
+import { NoData } from "../components/NoData";
 import { loadFittedGenes, type FittedGenes, TRAITS } from "../lib/data";
 import { CHART_COLORS } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -17,9 +18,13 @@ interface GenePoint {
 
 export function GeneLandscape() {
   const [data, setData] = useState<FittedGenes[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadFittedGenes().then(setData).catch(() => {});
+    loadFittedGenes()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const genePoints = useMemo(() => {
@@ -61,6 +66,15 @@ export function GeneLandscape() {
       { accessorKey: `B_${t}_genes`, header: `B ${t}` } as ColumnDef<FittedGenes, unknown>,
     ]),
   ];
+
+  if (!loading && data.length === 0) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">Gene Landscape</h1>
+        <NoData />
+      </div>
+    );
+  }
 
   return (
     <div>
