@@ -232,11 +232,14 @@ def _swap_current_symlink(final_dir: Path) -> None:
 
 def _fsync_file(path: Path) -> None:
     """Fsync a file to ensure durability."""
-    fd = os.open(str(path), os.O_RDONLY)
     try:
-        os.fsync(fd)
-    finally:
-        os.close(fd)
+        fd = os.open(str(path), os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except OSError:
+        pass  # Windows doesn't support fsync on read-only file descriptors
 
 
 def _fsync_dir(path: Path) -> None:

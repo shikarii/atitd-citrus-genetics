@@ -32,7 +32,6 @@ results/current
 node_modules/
 web/dist/
 web/types/
-web/public/data/
 
 # Docker
 docker-compose.override.yml
