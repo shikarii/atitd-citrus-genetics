@@ -5,7 +5,7 @@ import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
 import { loadMixtureWeights, type MixtureWeight } from "../lib/data";
-
+import { TEAL, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const columns: ColumnDef<MixtureWeight, unknown>[] = [
@@ -63,7 +63,7 @@ export function MixtureModels() {
       <div className="space-y-6">
         <ChartCard
           title="CLAIM Mixture Weight per Litter"
-          subtitle="Sorted by pi (lowest first); color encodes weight"
+          subtitle="Sorted by pi (lowest first). Green line: pi = 0.9 (strong fit). Amber line: pi = 0.7 (warning threshold)."
         >
           <PlotlyChart
             data={[
@@ -72,49 +72,62 @@ export function MixtureModels() {
                 y: sorted.map((d) => d.pi_claim),
                 type: "bar",
                 marker: {
-                  color: sorted.map((d) => d.pi_claim),
-                  colorscale: "RdYlGn",
-                  cmin: 0,
-                  cmax: 1,
+                  color: sorted.map((d) =>
+                    d.pi_claim >= 0.9 ? TEAL[600] : d.pi_claim >= 0.7 ? ACCENT.amber : ACCENT.coral,
+                  ),
+                  line: { color: "rgba(0,0,0,0.08)", width: 0.5 },
                 },
                 text: sorted.map((d) => d.pi_claim.toFixed(3)),
                 textposition: "outside" as const,
+                textfont: { size: 10, color: SLATE[500] },
+                hovertemplate: "<b>%{x}</b><br>pi(CLAIM) = %{y:.4f}<extra></extra>",
               },
             ]}
             layout={{
-              height: 450,
-              xaxis: { title: { text: "Litter" } },
-              yaxis: { title: { text: "pi (CLAIM weight)" }, range: [0, 1.05] },
+              height: 480,
+              xaxis: { title: { text: "Litter", standoff: 10 } },
+              yaxis: { title: { text: "\u03C0 (CLAIM Weight)", standoff: 10 }, range: [0, 1.08] },
               shapes: [
-                { type: "line", y0: 0.9, y1: 0.9, x0: 0, x1: 1, xref: "paper", line: { dash: "dot", color: "#10B981", width: 1 } },
-                { type: "line", y0: 0.7, y1: 0.7, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: "#F59E0B", width: 1 } },
+                { type: "line", y0: 0.9, y1: 0.9, x0: 0, x1: 1, xref: "paper", line: { dash: "dot", color: ACCENT.emerald, width: 1.5 } },
+                { type: "line", y0: 0.7, y1: 0.7, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: ACCENT.amber, width: 1.5 } },
+              ],
+              annotations: [
+                { x: 1, y: 0.9, xref: "paper", text: "\u03C0 = 0.9", showarrow: false, font: { size: 10, color: ACCENT.emerald }, yshift: 10, xanchor: "right" },
+                { x: 1, y: 0.7, xref: "paper", text: "\u03C0 = 0.7", showarrow: false, font: { size: 10, color: ACCENT.amber }, yshift: -10, xanchor: "right" },
               ],
             }}
           />
         </ChartCard>
 
         <ChartCard
-          title="Mixture vs CLAIM-Only Log-Likelihood"
-          subtitle="Positive delta means the mixture improves over CLAIM-only"
+          title="Mixture Log-Likelihood Improvement"
+          subtitle="Delta LL = mixture LL - CLAIM-only LL. Positive values indicate improvement from adding INDEP component."
         >
           <PlotlyChart
-            data={[
-              {
-                x: [...data].sort((a, b) => b.delta_ll - a.delta_ll).map((d) => d.litter),
-                y: [...data].sort((a, b) => b.delta_ll - a.delta_ll).map((d) => d.delta_ll),
+            data={(() => {
+              const deltaSorted = [...data].sort((a, b) => b.delta_ll - a.delta_ll);
+              return [{
+                x: deltaSorted.map((d) => d.litter),
+                y: deltaSorted.map((d) => d.delta_ll),
                 type: "bar",
                 marker: {
-                  color: [...data].sort((a, b) => b.delta_ll - a.delta_ll).map((d) => d.delta_ll),
-                  colorscale: "RdYlGn",
+                  color: deltaSorted.map((d) =>
+                    d.delta_ll > 1 ? ACCENT.coral : d.delta_ll > 0.1 ? ACCENT.amber : TEAL[600],
+                  ),
+                  line: { color: "rgba(0,0,0,0.08)", width: 0.5 },
                 },
-              },
-            ]}
+                text: deltaSorted.map((d) => d.delta_ll.toFixed(2)),
+                textposition: "outside" as const,
+                textfont: { size: 10, color: SLATE[500] },
+                hovertemplate: "<b>%{x}</b><br>\u0394LL = %{y:.2f}<extra></extra>",
+              }];
+            })()}
             layout={{
-              height: 400,
-              xaxis: { title: { text: "Litter" } },
-              yaxis: { title: { text: "Delta log-likelihood (mixture - CLAIM)" } },
+              height: 420,
+              xaxis: { title: { text: "Litter", standoff: 10 } },
+              yaxis: { title: { text: "\u0394 Log-Likelihood (Mixture - CLAIM)", standoff: 10 } },
               shapes: [
-                { type: "line", y0: 0, y1: 0, x0: 0, x1: 1, xref: "paper", line: { color: "#334155" } },
+                { type: "line", y0: 0, y1: 0, x0: 0, x1: 1, xref: "paper", line: { color: SLATE[700], width: 1 } },
               ],
             }}
           />

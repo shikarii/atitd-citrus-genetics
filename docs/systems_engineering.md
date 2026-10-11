@@ -1570,6 +1570,14 @@ Python pipeline. New analysis data requires a local pipeline run + export + comm
 | HashRouter over BrowserRouter | GitHub Pages returns 404 for non-root paths. HashRouter puts routes after `#` so the server always serves `index.html`. |
 | Light theme code blocks (greyscale) | Matches the white research publication aesthetic. Prism token colors use the teal/slate palette for visual cohesion. |
 | Mermaid diagrams (light theme) | `theme: "base"` with teal `themeVariables` for consistency with the overall palette. Dynamically imported to avoid bundling in the initial chunk. |
+| Academic chart styling | White background, axis lines with outside ticks, Inter font family, SVG export, consistent hover labels with white background and slate borders. All charts share `PLOTLY_LAYOUT` and `PLOTLY_CONFIG` defaults from `colors.ts`. |
+| Named color constants | All charts use `TEAL`, `SLATE`, `ACCENT` constants from `colors.ts`. No raw hex values in page components. Enables consistent palette changes from a single file. |
+| Teal-based heatmap colorscale | MI matrix and KS heatmaps use a custom 5-stop teal colorscale (`#F0FDFA` to `#134E4A`) instead of `YlOrRd` for palette consistency. Distribution tests use teal-to-coral for diverging significance. |
+| Semantic bar coloring | MixtureModels bars colored by threshold (teal >= 0.9, amber >= 0.7, coral < 0.7). Anomaly scatter uses red for LL < -5. Models bar chart uses coral for impossible-children models. |
+| Reference line annotations | All threshold/reference lines include text annotations (e.g., "z = 2", "p = 0.05", "LL = -5 threshold", "R = 150 (CLAIM default)") for readability without needing to consult the legend. |
+| 2x2 gene landscape grid | Gene pair scatter plots arranged in a 2-column grid (`lg:grid-cols-2`) for more compact layout vs full-width. |
+| 3D gene scatter | Interactive `scatter3d` plot showing (g1, g2, log-likelihood) across all traits and parents for exploratory spatial analysis of gene space. |
+| Trait correlation heatmap | Landing page includes a Pearson correlation matrix of the 4 child traits, confirming trait independence (a key CLAIM model assumption). |
 
 ### 16.4 Known Issues and Backlog
 
@@ -1582,9 +1590,8 @@ Python pipeline. New analysis data requires a local pipeline run + export + comm
 | Provenance Chain ASCII art | Fixed | Converted to Mermaid flowchart diagram in Section 1.4. |
 | plotly.js white page crash | Fixed | Switched to `plotly.js-dist-min` browser bundle. Root cause: Vite externalized Node.js builtins as empty stubs. |
 | Empty chart pages | Fixed | Added NoData component with loading states. Pages show "Data Not Available" instead of empty charts when JSON files are missing. |
+| Graph styling inconsistency | Fixed | All 10 chart pages updated with academic styling: named color constants, hover templates, reference line annotations, consistent marker borders, proper axis standoffs, and legend positioning. |
 
 ## 17. Related Documents
-
-- [Original README](../README.md) — upstream project description and results summary
 
 - [Original README](../README.md) — upstream project description and results summary

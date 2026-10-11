@@ -48,20 +48,67 @@ export const CHART_COLORS = [
 
 import type { Layout as PlotlyLayout, Config } from "plotly.js-dist-min";
 
-/** Plotly layout defaults for consistent styling. */
+/** Academic-style Plotly layout defaults. */
 export const PLOTLY_LAYOUT: Partial<PlotlyLayout> = {
-  font: { family: "Inter, system-ui, sans-serif", color: SLATE[700] },
-  paper_bgcolor: "transparent",
-  plot_bgcolor: "transparent",
-  margin: { l: 60, r: 20, t: 40, b: 50 },
-  xaxis: { gridcolor: SLATE[200], zerolinecolor: SLATE[300] },
-  yaxis: { gridcolor: SLATE[200], zerolinecolor: SLATE[300] },
+  font: {
+    family: "'Inter', 'Helvetica Neue', Arial, sans-serif",
+    color: SLATE[700],
+    size: 12,
+  },
+  paper_bgcolor: "white",
+  plot_bgcolor: "white",
+  margin: { l: 65, r: 30, t: 50, b: 60 },
+  xaxis: {
+    gridcolor: SLATE[200],
+    zerolinecolor: SLATE[300],
+    linecolor: SLATE[300],
+    linewidth: 1,
+    showline: true,
+    ticks: "outside",
+    tickcolor: SLATE[300],
+    ticklen: 4,
+    title: { font: { size: 13, color: SLATE[700] } },
+    tickfont: { size: 11 },
+  },
+  yaxis: {
+    gridcolor: SLATE[200],
+    zerolinecolor: SLATE[300],
+    linecolor: SLATE[300],
+    linewidth: 1,
+    showline: true,
+    ticks: "outside",
+    tickcolor: SLATE[300],
+    ticklen: 4,
+    title: { font: { size: 13, color: SLATE[700] } },
+    tickfont: { size: 11 },
+  },
   colorway: [...CHART_COLORS] as string[],
+  legend: {
+    font: { size: 11 },
+    bgcolor: "rgba(255,255,255,0.9)",
+    bordercolor: SLATE[200],
+    borderwidth: 1,
+  },
+  title: {
+    font: { size: 14, color: SLATE[800] },
+    x: 0.02,
+    xanchor: "left",
+  },
+  hoverlabel: {
+    bgcolor: "white",
+    bordercolor: SLATE[300],
+    font: { size: 12, family: "'Inter', sans-serif", color: SLATE[800] },
+  },
 };
 
 export const PLOTLY_CONFIG: Partial<Config> = {
   displayModeBar: true,
   displaylogo: false,
-  modeBarButtonsToRemove: ["lasso2d", "select2d"],
+  modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"],
   responsive: true,
+  toImageButtonOptions: {
+    format: "svg",
+    filename: "citrus-genetics-chart",
+    scale: 2,
+  },
 };

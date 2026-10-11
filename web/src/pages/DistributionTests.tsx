@@ -5,7 +5,7 @@ import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
 import { loadDistributionTests, type DistributionTest, TRAITS, LITTERS } from "../lib/data";
-import { CHART_COLORS } from "../lib/colors";
+import { CHART_COLORS, TEAL, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const columns: ColumnDef<DistributionTest, unknown>[] = [
@@ -79,8 +79,8 @@ export function DistributionTests() {
 
       <div className="space-y-6">
         <ChartCard
-          title="KS Statistic Heatmap (litter x trait)"
-          subtitle="Higher KS statistic = larger distributional discrepancy"
+          title="KS Statistic Heatmap"
+          subtitle="Litter (rows) vs trait (columns). Higher KS statistic indicates larger distributional discrepancy between observed and simulated."
         >
           <PlotlyChart
             data={[
@@ -89,23 +89,35 @@ export function DistributionTests() {
                 x: [...TRAITS],
                 y: [...LITTERS],
                 type: "heatmap",
-                colorscale: "YlOrRd",
+                colorscale: [
+                  [0, "#F0FDFA"],
+                  [0.2, TEAL[200]],
+                  [0.4, ACCENT.amber],
+                  [0.7, "#F97316"],
+                  [1, ACCENT.coral],
+                ],
                 text: heatmapText as unknown as string[],
                 texttemplate: "%{text}",
-                hovertemplate: "Litter: %{y}<br>Trait: %{x}<br>KS Stat: %{z:.4f}<extra></extra>",
+                textfont: { size: 11, color: SLATE[700] },
+                hovertemplate: "<b>%{y}</b> / <b>%{x}</b><br>KS Statistic: %{z:.4f}<extra></extra>",
+                colorbar: {
+                  title: { text: "KS Statistic", side: "right" },
+                  tickfont: { size: 10 },
+                  len: 0.9,
+                },
               },
             ]}
             layout={{
-              height: 500,
-              xaxis: { title: { text: "Trait" } },
-              yaxis: { title: { text: "Litter" } },
+              height: 520,
+              xaxis: { title: { text: "Trait", standoff: 15 }, tickfont: { size: 12 } },
+              yaxis: { title: { text: "Litter", standoff: 15 }, tickfont: { size: 11 } },
             }}
           />
         </ChartCard>
 
         <ChartCard
           title="Volcano Plot: KS Statistic vs Significance"
-          subtitle="-log10(p) on y-axis; points above dashed line are significant"
+          subtitle="Each point is one litter-trait test. Diamonds indicate FDR-significant. Dashed line at p = 0.05."
         >
           <PlotlyChart
             data={TRAITS.map((trait, i) => {
@@ -118,24 +130,35 @@ export function DistributionTests() {
                 type: "scatter" as const,
                 name: trait,
                 marker: {
-                  size: 10,
+                  size: 11,
                   color: CHART_COLORS[i],
                   symbol: entries.map((d) => (d.ks_sig_fdr ? "diamond" : "circle")),
+                  line: { color: "white", width: 1.5 },
+                  opacity: 0.85,
                 },
-                hovertemplate: "%{text}<br>KS: %{x:.4f}<br>-log10(p): %{y:.2f}<extra></extra>",
+                hovertemplate: "<b>%{text}</b><br>KS: %{x:.4f}<br>-log\u2081\u2080(p): %{y:.2f}<extra></extra>",
               };
             })}
             layout={{
-              height: 450,
-              xaxis: { title: { text: "KS Statistic" } },
-              yaxis: { title: { text: "-log10(KS p-value)" } },
+              height: 480,
+              xaxis: { title: { text: "KS Statistic", standoff: 10 } },
+              yaxis: { title: { text: "-log\u2081\u2080(KS p-value)", standoff: 10 } },
               shapes: [
                 {
                   type: "line", y0: -Math.log10(0.05), y1: -Math.log10(0.05),
                   x0: 0, x1: 1, xref: "paper",
-                  line: { dash: "dash", color: "#EF4444", width: 1 },
+                  line: { dash: "dash", color: ACCENT.coral, width: 1.5 },
                 },
               ],
+              annotations: [
+                {
+                  x: 1, y: -Math.log10(0.05), xref: "paper",
+                  text: "p = 0.05", showarrow: false,
+                  font: { size: 10, color: ACCENT.coral },
+                  yshift: 12, xanchor: "right",
+                },
+              ],
+              legend: { x: 0.01, y: 0.99, xanchor: "left", yanchor: "top" },
             }}
           />
         </ChartCard>

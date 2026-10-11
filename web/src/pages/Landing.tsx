@@ -9,19 +9,39 @@ import {
   loadChildren,
   type RunMeta,
   type ModelComparison,
+  type Child,
+  TRAITS,
 } from "../lib/data";
-import { CHART_COLORS } from "../lib/colors";
+import { CHART_COLORS, TEAL, SLATE } from "../lib/colors";
+
+function pearsonR(xs: number[], ys: number[]): number {
+  const n = xs.length;
+  if (n < 2) return 0;
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = ys.reduce((a, b) => a + b, 0) / n;
+  let num = 0, dx2 = 0, dy2 = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i]! - mx, dy = ys[i]! - my;
+    num += dx * dy;
+    dx2 += dx * dx;
+    dy2 += dy * dy;
+  }
+  const denom = Math.sqrt(dx2 * dy2);
+  return denom === 0 ? 0 : num / denom;
+}
 
 export function Landing() {
   const [meta, setMeta] = useState<RunMeta | null>(null);
   const [models, setModels] = useState<ModelComparison[]>([]);
-  const [nChildren, setNChildren] = useState(0);
+  const [children, setChildren] = useState<Child[]>([]);
 
   useEffect(() => {
     loadRunMeta().then(setMeta).catch(() => {});
     loadModelComparison().then(setModels).catch(() => {});
-    loadChildren().then((c) => setNChildren(c.length)).catch(() => {});
+    loadChildren().then(setChildren).catch(() => {});
   }, []);
+
+  const nChildren = children.length;
 
   const top5 = [...models].sort((a, b) => b.cv_ll - a.cv_ll).slice(0, 5);
 
@@ -108,15 +128,72 @@ export function Landing() {
                   type: "bar",
                   marker: {
                     color: top5.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+                    line: { color: "rgba(0,0,0,0.1)", width: 0.5 },
                   },
                   text: top5.map((m) => m.cv_ll.toFixed(1)),
                   textposition: "outside" as const,
+                  textfont: { size: 11, color: SLATE[500] },
+                  hovertemplate: "<b>%{x}</b><br>CV LL: %{y:.1f}<extra></extra>",
                 },
               ]}
               layout={{
-                height: 350,
-                xaxis: { title: { text: "Model" } },
-                yaxis: { title: { text: "CV Log-Likelihood" } },
+                height: 380,
+                xaxis: {
+                  title: { text: "Model Specification", standoff: 15 },
+                  tickangle: -25,
+                },
+                yaxis: {
+                  title: { text: "Cross-Validated Log-Likelihood", standoff: 10 },
+                },
+                bargap: 0.3,
+              }}
+            />
+          </ChartCard>
+        </section>
+      )}
+
+      {children.length > 0 && (
+        <section className="mb-8">
+          <ChartCard
+            title="Trait Correlation Matrix"
+            subtitle="Pearson correlation between child trait values across all 692 offspring. Low correlations confirm trait independence."
+          >
+            <PlotlyChart
+              data={(() => {
+                const labels = TRAITS.map((t) => t.charAt(0).toUpperCase() + t.slice(1));
+                const z = TRAITS.map((t1) => {
+                  const v1 = children.map((c) => c[t1 as keyof Child] as number);
+                  return TRAITS.map((t2) => {
+                    const v2 = children.map((c) => c[t2 as keyof Child] as number);
+                    return parseFloat(pearsonR(v1, v2).toFixed(3));
+                  });
+                });
+                return [{
+                  z,
+                  x: labels,
+                  y: labels,
+                  type: "heatmap",
+                  colorscale: [
+                    [0, TEAL[100]],
+                    [0.5, "white"],
+                    [1, TEAL[700]],
+                  ],
+                  zmin: -1,
+                  zmax: 1,
+                  text: z.map((row) => row.map((v) => v.toFixed(3))) as unknown as string[],
+                  texttemplate: "%{text}",
+                  textfont: { size: 13, color: SLATE[800] },
+                  hovertemplate: "<b>%{y}</b> vs <b>%{x}</b><br>r = %{z:.3f}<extra></extra>",
+                  colorbar: {
+                    title: { text: "Pearson r", side: "right" },
+                    tickfont: { size: 10 },
+                  },
+                }];
+              })()}
+              layout={{
+                height: 400,
+                xaxis: { tickfont: { size: 13 } },
+                yaxis: { tickfont: { size: 13 }, autorange: "reversed" },
               }}
             />
           </ChartCard>

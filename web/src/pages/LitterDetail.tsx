@@ -17,7 +17,7 @@ import {
   TRAITS,
   LITTERS,
 } from "../lib/data";
-import { CHART_COLORS } from "../lib/colors";
+import { CHART_COLORS, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const childColumns: ColumnDef<Child, unknown>[] = [
@@ -179,7 +179,7 @@ export function LitterDetail() {
       <div className="space-y-6">
         <ChartCard
           title="Child Trait Distributions"
-          subtitle="Blue dashed = Parent A, red dashed = Parent B"
+          subtitle="Box plots with individual points. Blue dashed line = Parent A trait value, red dashed = Parent B."
         >
           <PlotlyChart
             data={TRAITS.map((trait, i) => ({
@@ -189,25 +189,34 @@ export function LitterDetail() {
               boxpoints: "all" as const,
               jitter: 0.3,
               pointpos: -1.8,
-              marker: { color: CHART_COLORS[i] },
+              marker: {
+                color: CHART_COLORS[i],
+                size: 5,
+                line: { color: "white", width: 0.5 },
+              },
+              line: { width: 1.5 },
+              hovertemplate: "<b>%{x}</b><br>Value: %{y}<extra></extra>",
             }))}
             layout={{
-              height: 400,
-              yaxis: { title: { text: "Trait value (0-1000)" } },
+              height: 450,
+              yaxis: { title: { text: "Trait Value (0-1000)", standoff: 10 } },
               shapes: TRAITS.flatMap((trait, i) => [
                 {
                   type: "line" as const,
                   x0: i - 0.4, x1: i + 0.4,
                   y0: parentA[trait] ?? 0, y1: parentA[trait] ?? 0,
-                  line: { color: "#3B82F6", dash: "dash" as const, width: 2 },
+                  line: { color: ACCENT.indigo, dash: "dash" as const, width: 2 },
                 },
                 {
                   type: "line" as const,
                   x0: i - 0.4, x1: i + 0.4,
                   y0: parentB[trait] ?? 0, y1: parentB[trait] ?? 0,
-                  line: { color: "#EF4444", dash: "dash" as const, width: 2 },
+                  line: { color: ACCENT.coral, dash: "dash" as const, width: 2 },
                 },
               ]),
+              annotations: [
+                { x: 0, y: 1.08, yref: "paper", xref: "paper", text: "--- Parent A  --- Parent B", showarrow: false, font: { size: 10, color: SLATE[500] } },
+              ],
             }}
           />
         </ChartCard>
@@ -215,7 +224,7 @@ export function LitterDetail() {
         {litterResiduals.length > 0 && (
           <ChartCard
             title="Per-Child Residuals"
-            subtitle="Observed - CLAIM predicted; zero line = perfect prediction"
+            subtitle="Observed minus CLAIM predicted per trait. Zero line indicates perfect prediction."
           >
             <PlotlyChart
               data={TRAITS.map((trait, i) => ({
@@ -226,19 +235,21 @@ export function LitterDetail() {
                 type: "scatter" as const,
                 mode: "lines+markers" as const,
                 name: trait,
-                marker: { size: 6, color: CHART_COLORS[i] },
-                line: { color: CHART_COLORS[i] },
+                marker: { size: 7, color: CHART_COLORS[i], line: { color: "white", width: 1 } },
+                line: { color: CHART_COLORS[i], width: 1.5 },
+                hovertemplate: "<b>Child #%{x}</b><br>Residual: %{y:.1f}<extra>%{fullData.name}</extra>",
               }))}
               layout={{
-                height: 400,
-                xaxis: { title: { text: "Child #" } },
-                yaxis: { title: { text: "Residual" } },
+                height: 420,
+                xaxis: { title: { text: "Child #", standoff: 10 }, dtick: 1 },
+                yaxis: { title: { text: "Residual", standoff: 10 } },
                 shapes: [
                   {
                     type: "line", y0: 0, y1: 0, x0: 0, x1: 1,
-                    xref: "paper", line: { dash: "dash", color: "#334155" },
+                    xref: "paper", line: { dash: "dash", color: SLATE[700], width: 1.5 },
                   },
                 ],
+                legend: { x: 0.01, y: 0.99, xanchor: "left", yanchor: "top" },
               }}
             />
           </ChartCard>

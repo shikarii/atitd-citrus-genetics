@@ -5,7 +5,7 @@ import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
 import { loadRSweep, type RSweepEntry } from "../lib/data";
-import { CHART_COLORS } from "../lib/colors";
+import { CHART_COLORS, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const columns: ColumnDef<RSweepEntry, unknown>[] = [
@@ -57,7 +57,7 @@ export function RSweep() {
       <div className="space-y-6">
         <ChartCard
           title="Log-Likelihood vs Nudge Range R"
-          subtitle="Both fit (solid) and cross-validated (dashed) log-likelihood"
+          subtitle="In-sample fit (solid) and leave-one-litter-out cross-validated (dashed) log-likelihood across R values"
         >
           <PlotlyChart
             data={[
@@ -66,40 +66,43 @@ export function RSweep() {
                 y: data.map((d) => d.fit_ll),
                 type: "scatter",
                 mode: "lines+markers" as const,
-                name: "Fit LL",
-                marker: { color: CHART_COLORS[0], size: 6 },
-                line: { color: CHART_COLORS[0] },
+                name: "In-Sample Fit LL",
+                marker: { color: CHART_COLORS[0], size: 7, line: { color: "white", width: 1 } },
+                line: { color: CHART_COLORS[0], width: 2 },
+                hovertemplate: "<b>R = %{x}</b><br>Fit LL: %{y:.1f}<extra></extra>",
               },
               {
                 x: data.map((d) => d.R),
                 y: data.map((d) => d.cv_ll),
                 type: "scatter",
                 mode: "lines+markers" as const,
-                name: "CV LL",
-                marker: { color: CHART_COLORS[1], size: 6 },
-                line: { color: CHART_COLORS[1], dash: "dash" },
+                name: "Cross-Validated LL",
+                marker: { color: CHART_COLORS[1], size: 7, symbol: "diamond", line: { color: "white", width: 1 } },
+                line: { color: CHART_COLORS[1], dash: "dash", width: 2 },
+                hovertemplate: "<b>R = %{x}</b><br>CV LL: %{y:.1f}<extra></extra>",
               },
             ]}
             layout={{
-              height: 450,
-              xaxis: { title: { text: "R (mutation nudge range)" } },
-              yaxis: { title: { text: "Log-Likelihood" } },
+              height: 480,
+              xaxis: { title: { text: "R (Mutation Nudge Range)", standoff: 10 }, dtick: 25 },
+              yaxis: { title: { text: "Log-Likelihood", standoff: 10 } },
               shapes: [
                 {
                   type: "line",
                   x0: 150, x1: 150, y0: 0, y1: 1,
                   yref: "paper",
-                  line: { dash: "dot", color: "#94A3B8", width: 1 },
+                  line: { dash: "dot", color: SLATE[400], width: 1.5 },
                 },
               ],
               annotations: [
                 {
                   x: 150, y: 1.05, yref: "paper",
-                  text: "R=150 (CLAIM default)",
+                  text: "R = 150 (CLAIM default)",
                   showarrow: false,
-                  font: { size: 10, color: "#64748B" },
+                  font: { size: 10, color: SLATE[500] },
                 },
               ],
+              legend: { x: 0.01, y: 0.01, xanchor: "left", yanchor: "bottom" },
             }}
           />
         </ChartCard>

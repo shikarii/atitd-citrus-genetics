@@ -5,7 +5,7 @@ import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
 import { loadModelComparison, type ModelComparison } from "../lib/data";
-import { CHART_COLORS } from "../lib/colors";
+import { TEAL, ACCENT, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const columns: ColumnDef<ModelComparison, unknown>[] = [
@@ -66,7 +66,7 @@ export function Models() {
       <div className="space-y-6">
         <ChartCard
           title="Cross-Validated Log-Likelihood Leaderboard"
-          subtitle="Models sorted by CV LL; higher is better"
+          subtitle="Models sorted by CV LL; higher is better. Red bars indicate models with impossible children."
         >
           <PlotlyChart
             data={[
@@ -76,24 +76,34 @@ export function Models() {
                 type: "bar",
                 marker: {
                   color: sorted.map((m) =>
-                    m.children_impossible > 0 ? "#EF4444" : CHART_COLORS[0],
+                    m.children_impossible > 0 ? ACCENT.coral : TEAL[600],
                   ),
+                  line: { color: "rgba(0,0,0,0.08)", width: 0.5 },
                 },
                 text: sorted.map((m) => m.cv_ll.toFixed(0)),
                 textposition: "outside" as const,
+                textfont: { size: 10, color: SLATE[500] },
+                hovertemplate: "<b>%{x}</b><br>CV LL: %{y:.1f}<br>Rank: %{pointNumber}<extra></extra>",
               },
             ]}
             layout={{
-              height: 500,
-              xaxis: { title: { text: "Model" }, tickangle: -45 },
-              yaxis: { title: { text: "CV Log-Likelihood" } },
+              height: 520,
+              xaxis: {
+                title: { text: "Model Specification", standoff: 20 },
+                tickangle: -45,
+                tickfont: { size: 10 },
+              },
+              yaxis: {
+                title: { text: "Cross-Validated Log-Likelihood", standoff: 10 },
+              },
+              bargap: 0.25,
             }}
           />
         </ChartCard>
 
         <ChartCard
-          title="Fit vs Cross-Validated Log-Likelihood"
-          subtitle="Points above the diagonal indicate overfitting"
+          title="In-Sample Fit vs Cross-Validation Performance"
+          subtitle="Dashed line: y = x. Points below the line overfit to training data."
         >
           <PlotlyChart
             data={[
@@ -101,28 +111,52 @@ export function Models() {
                 x: data.map((m) => m.fit_ll),
                 y: data.map((m) => m.cv_ll),
                 text: data.map((m) => m.model),
-                mode: "text+markers" as const,
+                mode: "markers" as const,
                 type: "scatter",
-                textposition: "top right" as const,
-                textfont: { size: 9 },
                 marker: {
                   size: 10,
                   color: data.map((m) =>
-                    m.children_impossible > 0 ? "#EF4444" : CHART_COLORS[0],
+                    m.children_impossible > 0 ? ACCENT.coral : TEAL[600],
                   ),
+                  line: { color: "white", width: 1.5 },
+                  opacity: 0.85,
                 },
+                hovertemplate: "<b>%{text}</b><br>Fit LL: %{x:.1f}<br>CV LL: %{y:.1f}<extra></extra>",
+              },
+              // y=x reference line
+              {
+                x: [Math.min(...data.map((m) => m.fit_ll)) - 200, Math.max(...data.map((m) => m.fit_ll)) + 200],
+                y: [Math.min(...data.map((m) => m.fit_ll)) - 200, Math.max(...data.map((m) => m.fit_ll)) + 200],
+                mode: "lines" as const,
+                type: "scatter",
+                line: { color: SLATE[300], dash: "dash", width: 1 },
+                showlegend: false,
+                hoverinfo: "skip" as const,
               },
             ]}
             layout={{
-              height: 500,
-              xaxis: { title: { text: "Fit Log-Likelihood (full data)" } },
-              yaxis: { title: { text: "CV Log-Likelihood (leave-one-out)" } },
+              height: 520,
+              xaxis: { title: { text: "In-Sample Log-Likelihood (fit_ll)", standoff: 10 } },
+              yaxis: { title: { text: "Cross-Validated Log-Likelihood (cv_ll)", standoff: 10 } },
+              annotations: data.length > 0 ? sorted.slice(0, 5).map((m) => ({
+                x: m.fit_ll,
+                y: m.cv_ll,
+                text: m.model,
+                showarrow: true,
+                arrowhead: 0,
+                arrowcolor: SLATE[400],
+                ax: 30,
+                ay: -20,
+                font: { size: 10, color: SLATE[700] },
+                bgcolor: "rgba(255,255,255,0.85)",
+                borderpad: 2,
+              })) : [],
             }}
           />
         </ChartCard>
 
         <div>
-          <h2 className="text-lg font-semibold text-slate-800 mb-3">All Models</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-3">Full Model Comparison Table</h2>
           <DataTable
             data={sorted as unknown as Record<string, unknown>[]}
             columns={columns as ColumnDef<Record<string, unknown>, unknown>[]}

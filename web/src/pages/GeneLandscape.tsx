@@ -5,7 +5,7 @@ import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
 import { loadFittedGenes, type FittedGenes, TRAITS } from "../lib/data";
-import { CHART_COLORS } from "../lib/colors";
+import { CHART_COLORS, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface GenePoint {
@@ -14,6 +14,7 @@ interface GenePoint {
   trait: string;
   g1: number;
   g2: number;
+  loglik: number;
 }
 
 export function GeneLandscape() {
@@ -42,6 +43,7 @@ export function GeneLandscape() {
               trait,
               g1: parseInt(match[1]!),
               g2: parseInt(match[2]!),
+              loglik: row.loglik,
             });
           }
         }
@@ -92,62 +94,116 @@ export function GeneLandscape() {
       </div>
 
       <div className="space-y-6">
-        {TRAITS.map((trait, ti) => {
-          const traitPoints = genePoints.filter((p) => p.trait === trait);
-          const aPoints = traitPoints.filter((p) => p.parent === "Parent A");
-          const bPoints = traitPoints.filter((p) => p.parent === "Parent B");
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {TRAITS.map((trait, ti) => {
+            const traitPoints = genePoints.filter((p) => p.trait === trait);
+            const aPoints = traitPoints.filter((p) => p.parent === "Parent A");
+            const bPoints = traitPoints.filter((p) => p.parent === "Parent B");
 
-          return (
-            <ChartCard
-              key={trait}
-              title={`Gene Pairs: ${trait}`}
-              subtitle="g1 vs g2 for each parent; diagonal = homozygous-like"
-            >
-              <PlotlyChart
-                data={[
-                  {
-                    x: aPoints.map((p) => p.g1),
-                    y: aPoints.map((p) => p.g2),
-                    text: aPoints.map((p) => p.litter),
-                    mode: "text+markers" as const,
-                    type: "scatter",
-                    name: "Parent A",
-                    textposition: "top right" as const,
-                    textfont: { size: 9 },
-                    marker: { size: 10, color: CHART_COLORS[ti * 2] },
-                    hovertemplate: "%{text}<br>g1: %{x}<br>g2: %{y}<extra>Parent A</extra>",
+            return (
+              <ChartCard
+                key={trait}
+                title={`Gene Pairs: ${trait.charAt(0).toUpperCase() + trait.slice(1)}`}
+                subtitle="g1 vs g2 per parent. Points on the diagonal indicate homozygous-like genes."
+              >
+                <PlotlyChart
+                  data={[
+                    {
+                      x: aPoints.map((p) => p.g1),
+                      y: aPoints.map((p) => p.g2),
+                      text: aPoints.map((p) => p.litter),
+                      mode: "text+markers" as const,
+                      type: "scatter",
+                      name: "Parent A",
+                      textposition: "top right" as const,
+                      textfont: { size: 9, color: SLATE[500] },
+                      marker: {
+                        size: 11,
+                        color: CHART_COLORS[ti * 2],
+                        line: { color: "white", width: 1.5 },
+                        opacity: 0.85,
+                      },
+                      hovertemplate: "<b>%{text}</b><br>g1: %{x}<br>g2: %{y}<extra>Parent A</extra>",
+                    },
+                    {
+                      x: bPoints.map((p) => p.g1),
+                      y: bPoints.map((p) => p.g2),
+                      text: bPoints.map((p) => p.litter),
+                      mode: "text+markers" as const,
+                      type: "scatter",
+                      name: "Parent B",
+                      textposition: "top right" as const,
+                      textfont: { size: 9, color: SLATE[500] },
+                      marker: {
+                        size: 11,
+                        color: CHART_COLORS[ti * 2 + 1],
+                        symbol: "diamond",
+                        line: { color: "white", width: 1.5 },
+                        opacity: 0.85,
+                      },
+                      hovertemplate: "<b>%{text}</b><br>g1: %{x}<br>g2: %{y}<extra>Parent B</extra>",
+                    },
+                    {
+                      x: [0, 1000],
+                      y: [0, 1000],
+                      mode: "lines" as const,
+                      type: "scatter",
+                      name: "g1 = g2",
+                      line: { dash: "dash", color: SLATE[300], width: 1.5 },
+                      showlegend: false,
+                      hoverinfo: "skip" as const,
+                    },
+                  ]}
+                  layout={{
+                    height: 420,
+                    xaxis: { title: { text: "Gene 1", standoff: 10 }, range: [0, 1000] },
+                    yaxis: { title: { text: "Gene 2", standoff: 10 }, range: [0, 1000] },
+                    legend: { x: 0.01, y: 0.99, xanchor: "left", yanchor: "top" },
+                  }}
+                />
+              </ChartCard>
+            );
+          })}
+        </div>
+
+        {genePoints.length > 0 && (
+          <ChartCard
+            title="3D Gene Landscape: All Traits"
+            subtitle="Gene 1 vs Gene 2 vs per-litter log-likelihood across all traits and parents. Color encodes trait."
+          >
+            <PlotlyChart
+              data={TRAITS.map((trait, ti) => {
+                const pts = genePoints.filter((p) => p.trait === trait);
+                return {
+                  x: pts.map((p) => p.g1),
+                  y: pts.map((p) => p.g2),
+                  z: pts.map((p) => p.loglik),
+                  text: pts.map((p) => `${p.litter} (${p.parent})`),
+                  mode: "markers" as const,
+                  type: "scatter3d" as const,
+                  name: trait.charAt(0).toUpperCase() + trait.slice(1),
+                  marker: {
+                    size: 5,
+                    color: CHART_COLORS[ti],
+                    opacity: 0.8,
+                    line: { color: "white", width: 0.5 },
                   },
-                  {
-                    x: bPoints.map((p) => p.g1),
-                    y: bPoints.map((p) => p.g2),
-                    text: bPoints.map((p) => p.litter),
-                    mode: "text+markers" as const,
-                    type: "scatter",
-                    name: "Parent B",
-                    textposition: "top right" as const,
-                    textfont: { size: 9 },
-                    marker: { size: 10, color: CHART_COLORS[ti * 2 + 1], symbol: "diamond" },
-                    hovertemplate: "%{text}<br>g1: %{x}<br>g2: %{y}<extra>Parent B</extra>",
-                  },
-                  {
-                    x: [0, 1000],
-                    y: [0, 1000],
-                    mode: "lines" as const,
-                    type: "scatter",
-                    name: "Diagonal",
-                    line: { dash: "dash", color: "#CBD5E1", width: 1 },
-                    showlegend: false,
-                  },
-                ]}
-                layout={{
-                  height: 400,
-                  xaxis: { title: { text: "Gene 1" }, range: [0, 1000] },
-                  yaxis: { title: { text: "Gene 2" }, range: [0, 1000] },
-                }}
-              />
-            </ChartCard>
-          );
-        })}
+                  hovertemplate: "<b>%{text}</b><br>g1: %{x}<br>g2: %{y}<br>LL: %{z:.1f}<extra>%{fullData.name}</extra>",
+                };
+              })}
+              layout={{
+                height: 600,
+                scene: {
+                  xaxis: { title: { text: "Gene 1" } },
+                  yaxis: { title: { text: "Gene 2" } },
+                  zaxis: { title: { text: "Log-Likelihood" } },
+                  camera: { eye: { x: 1.5, y: 1.5, z: 0.8 } },
+                },
+                legend: { x: 0.01, y: 0.99, xanchor: "left", yanchor: "top" },
+              }}
+            />
+          </ChartCard>
+        )}
 
         <div>
           <h2 className="text-lg font-semibold text-slate-800 mb-3">Fitted Gene Values</h2>

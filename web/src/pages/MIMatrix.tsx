@@ -4,6 +4,7 @@ import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { NoData } from "../components/NoData";
 import { loadMIMatrix, type MIEntry, TRAITS } from "../lib/data";
+import { TEAL, SLATE, ACCENT } from "../lib/colors";
 
 const PARENT_VARS = TRAITS.flatMap((t) => [`A_${t}`, `B_${t}`]);
 
@@ -73,8 +74,8 @@ export function MIMatrix() {
 
       <div className="space-y-6">
         <ChartCard
-          title="MI Excess Heatmap (parent var x child trait)"
-          subtitle="Diagonal entries should dominate if traits are inherited independently"
+          title="MI Excess Heatmap"
+          subtitle="Parent variable (rows) vs child trait (columns). Diagonal entries should dominate if traits are inherited independently."
         >
           <PlotlyChart
             data={[
@@ -83,50 +84,80 @@ export function MIMatrix() {
                 x: heatmapX,
                 y: heatmapY,
                 type: "heatmap",
-                colorscale: "YlOrRd",
+                colorscale: [
+                  [0, "#F0FDFA"],
+                  [0.25, TEAL[200]],
+                  [0.5, TEAL[400]],
+                  [0.75, TEAL[600]],
+                  [1, TEAL[900]],
+                ],
                 text: heatmapZ.map((row) => row.map((v) => v.toFixed(4))) as unknown as string[],
                 texttemplate: "%{text}",
-                hovertemplate: "Parent: %{y}<br>Child: %{x}<br>MI Excess: %{z:.4f}<extra></extra>",
+                textfont: { size: 11, color: SLATE[700] },
+                hovertemplate: "<b>%{y}</b> → <b>%{x}</b><br>MI Excess: %{z:.4f}<extra></extra>",
+                colorbar: {
+                  title: { text: "MI Excess", side: "right" },
+                  tickfont: { size: 10 },
+                  len: 0.9,
+                },
               },
             ]}
             layout={{
-              height: 450,
-              xaxis: { title: { text: "Child Trait" } },
-              yaxis: { title: { text: "Parent Variable" } },
+              height: 480,
+              xaxis: { title: { text: "Child Trait", standoff: 15 }, tickfont: { size: 12 } },
+              yaxis: { title: { text: "Parent Variable", standoff: 15 }, tickfont: { size: 11 } },
             }}
           />
         </ChartCard>
 
         <ChartCard
           title="MI Excess Z-Scores"
-          subtitle="How many standard deviations above shuffled baseline"
+          subtitle="Standard deviations above shuffled baseline. Dashed lines at z = +/- 2 (95% threshold)."
         >
           <PlotlyChart
             data={[
               {
-                x: diagonalEntries.map((e) => `${e.parent_var} -> ${e.child_var}`),
+                x: diagonalEntries.map((e) => `${e.parent_var} → ${e.child_var}`),
                 y: diagonalEntries.map((e) => e.mi_excess_z),
                 type: "bar",
                 name: "Diagonal (expected)",
-                marker: { color: "#0D9488" },
+                marker: {
+                  color: TEAL[600],
+                  line: { color: TEAL[700], width: 0.5 },
+                },
+                hovertemplate: "<b>%{x}</b><br>z = %{y:.2f}<extra>Diagonal</extra>",
               },
               {
-                x: offDiagEntries.map((e) => `${e.parent_var} -> ${e.child_var}`),
+                x: offDiagEntries.map((e) => `${e.parent_var} → ${e.child_var}`),
                 y: offDiagEntries.map((e) => e.mi_excess_z),
                 type: "bar",
                 name: "Off-diagonal",
-                marker: { color: "#94A3B8" },
+                marker: {
+                  color: SLATE[400],
+                  line: { color: SLATE[500], width: 0.5 },
+                },
+                hovertemplate: "<b>%{x}</b><br>z = %{y:.2f}<extra>Off-diagonal</extra>",
               },
             ]}
             layout={{
-              height: 400,
-              xaxis: { title: { text: "Parent -> Child pair" }, tickangle: -45 },
-              yaxis: { title: { text: "Z-score (excess MI)" } },
+              height: 420,
+              xaxis: {
+                title: { text: "Parent → Child Pair", standoff: 20 },
+                tickangle: -45,
+                tickfont: { size: 9 },
+              },
+              yaxis: { title: { text: "Z-Score (Excess MI)", standoff: 10 } },
               barmode: "group",
+              bargap: 0.2,
               shapes: [
-                { type: "line", y0: 2, y1: 2, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: "#EF4444" } },
-                { type: "line", y0: -2, y1: -2, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: "#EF4444" } },
+                { type: "line", y0: 2, y1: 2, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: ACCENT.coral, width: 1.5 } },
+                { type: "line", y0: -2, y1: -2, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: ACCENT.coral, width: 1.5 } },
               ],
+              annotations: [
+                { x: 1, y: 2, xref: "paper", text: "z = 2", showarrow: false, font: { size: 10, color: ACCENT.coral }, yshift: 10 },
+                { x: 1, y: -2, xref: "paper", text: "z = -2", showarrow: false, font: { size: 10, color: ACCENT.coral }, yshift: -10 },
+              ],
+              legend: { x: 0.01, y: 0.99, xanchor: "left", yanchor: "top" },
             }}
           />
         </ChartCard>

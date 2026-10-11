@@ -5,7 +5,7 @@ import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
 import { loadAnomalyScores, type AnomalyScore, TRAITS } from "../lib/data";
-import { CHART_COLORS } from "../lib/colors";
+import { CHART_COLORS, TEAL, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const columns: ColumnDef<AnomalyScore, unknown>[] = [
@@ -74,7 +74,7 @@ export function Anomalies() {
       <div className="space-y-6">
         <ChartCard
           title="Log-Likelihood Distribution by Litter"
-          subtitle="Box plots showing per-child log-likelihood spread"
+          subtitle="Box plots showing per-child log-likelihood spread across litters"
         >
           <PlotlyChart
             data={litters.map((litter, i) => ({
@@ -82,19 +82,25 @@ export function Anomalies() {
               type: "box" as const,
               name: litter,
               boxpoints: "outliers" as const,
-              marker: { color: CHART_COLORS[i % CHART_COLORS.length] },
+              marker: {
+                color: CHART_COLORS[i % CHART_COLORS.length],
+                outliercolor: ACCENT.coral,
+              },
+              line: { width: 1.5 },
+              hovertemplate: "<b>%{x}</b><br>LL: %{y:.3f}<extra></extra>",
             }))}
             layout={{
-              height: 450,
-              yaxis: { title: { text: "Log-Likelihood" } },
+              height: 480,
+              yaxis: { title: { text: "Log-Likelihood", standoff: 10 } },
+              xaxis: { tickangle: -30, tickfont: { size: 10 } },
               showlegend: false,
             }}
           />
         </ChartCard>
 
         <ChartCard
-          title="Ranked Anomaly Scores (All Children)"
-          subtitle="Children sorted by log-likelihood; hover for details"
+          title="Ranked Anomaly Scores"
+          subtitle="All children sorted by log-likelihood. Red markers indicate LL < -5 (anomalous)."
         >
           <PlotlyChart
             data={[
@@ -105,18 +111,27 @@ export function Anomalies() {
                 mode: "markers" as const,
                 type: "scatter",
                 marker: {
-                  size: 4,
-                  color: sorted.map((d) => (d.log_lik < -5 ? "#EF4444" : "#0D9488")),
+                  size: 5,
+                  color: sorted.map((d) => (d.log_lik < -5 ? ACCENT.coral : TEAL[600])),
+                  line: { color: "white", width: 0.5 },
+                  opacity: 0.85,
                 },
-                hovertemplate: "%{text}<br>LL: %{y:.3f}<extra></extra>",
+                hovertemplate: "<b>%{text}</b><br>Rank: %{x}<br>LL: %{y:.3f}<extra></extra>",
               },
             ]}
             layout={{
-              height: 400,
-              xaxis: { title: { text: "Rank" } },
-              yaxis: { title: { text: "Log-Likelihood" } },
+              height: 420,
+              xaxis: { title: { text: "Rank (worst to best)", standoff: 10 } },
+              yaxis: { title: { text: "Log-Likelihood", standoff: 10 } },
               shapes: [
-                { type: "line", y0: -5, y1: -5, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: "#EF4444", width: 1 } },
+                { type: "line", y0: -5, y1: -5, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: ACCENT.coral, width: 1.5 } },
+              ],
+              annotations: [
+                {
+                  x: 1, y: -5, xref: "paper", text: "LL = -5 threshold",
+                  showarrow: false, font: { size: 10, color: ACCENT.coral },
+                  yshift: -12, xanchor: "right",
+                },
               ],
             }}
           />

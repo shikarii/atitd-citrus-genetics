@@ -10,7 +10,7 @@ import {
   type SiblingCorrelation,
   TRAITS,
 } from "../lib/data";
-import { CHART_COLORS } from "../lib/colors";
+import { CHART_COLORS, SLATE, ACCENT } from "../lib/colors";
 
 export function Residuals() {
   const [residuals, setResiduals] = useState<ResidualEntry[]>([]);
@@ -67,43 +67,56 @@ export function Residuals() {
       <div className="space-y-6">
         <ChartCard
           title="Residual Distributions by Trait"
-          subtitle="Histograms should be centered near zero with symmetric tails"
+          subtitle="Overlaid histograms centered near zero with symmetric tails indicate unbiased predictions"
         >
           <PlotlyChart
             data={traitResiduals.map((tr, i) => ({
               x: tr.values,
               type: "histogram" as const,
               name: tr.trait,
-              opacity: 0.7,
-              marker: { color: CHART_COLORS[i] },
+              opacity: 0.65,
+              marker: {
+                color: CHART_COLORS[i],
+                line: { color: "rgba(0,0,0,0.08)", width: 0.5 },
+              },
               nbinsx: 30,
+              hovertemplate: "<b>%{fullData.name}</b><br>Residual: %{x}<br>Count: %{y}<extra></extra>",
             }))}
             layout={{
-              height: 400,
+              height: 420,
               barmode: "overlay",
-              xaxis: { title: { text: "Residual (observed - predicted)" } },
-              yaxis: { title: { text: "Count" } },
+              xaxis: { title: { text: "Residual (Observed - Predicted)", standoff: 10 } },
+              yaxis: { title: { text: "Count", standoff: 10 } },
+              legend: { x: 0.01, y: 0.99, xanchor: "left", yanchor: "top" },
+              shapes: [
+                { type: "line", x0: 0, x1: 0, y0: 0, y1: 1, yref: "paper", line: { dash: "dash", color: SLATE[700], width: 1.5 } },
+              ],
+              annotations: [
+                { x: 0, y: 1.02, yref: "paper", text: "Zero", showarrow: false, font: { size: 10, color: SLATE[500] } },
+              ],
             }}
           />
         </ChartCard>
 
         <ChartCard
-          title="Residuals by Trait (Box Plots)"
-          subtitle="Box centered at zero indicates unbiased predictions"
+          title="Residual Box Plots by Trait"
+          subtitle="Median centered at zero indicates unbiased predictions. Outliers shown individually."
         >
           <PlotlyChart
             data={traitResiduals.map((tr, i) => ({
               y: tr.values,
               type: "box" as const,
               name: tr.trait,
-              marker: { color: CHART_COLORS[i] },
+              marker: { color: CHART_COLORS[i], outliercolor: ACCENT.coral },
+              line: { width: 1.5 },
               boxpoints: "outliers" as const,
+              hovertemplate: "<b>%{x}</b><br>Residual: %{y:.1f}<extra></extra>",
             }))}
             layout={{
-              height: 400,
-              yaxis: { title: { text: "Residual" } },
+              height: 420,
+              yaxis: { title: { text: "Residual", standoff: 10 } },
               shapes: [
-                { type: "line", y0: 0, y1: 0, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: "#334155" } },
+                { type: "line", y0: 0, y1: 0, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: SLATE[700], width: 1.5 } },
               ],
             }}
           />
@@ -111,8 +124,8 @@ export function Residuals() {
 
         {sibCorr.length > 0 && (
           <ChartCard
-            title="Sibling Correlations"
-            subtitle="Pearson r between siblings' residuals within each litter; significant values suggest unmodeled structure"
+            title="Sibling Residual Correlations"
+            subtitle="Pearson r between siblings' residuals per litter. Significant correlations (p < 0.05) suggest unmodeled structure."
           >
             <PlotlyChart
               data={TRAITS.map((trait, i) => {
@@ -122,17 +135,23 @@ export function Residuals() {
                   y: entries.map((s) => s.pearson_r),
                   type: "bar" as const,
                   name: trait,
-                  marker: { color: CHART_COLORS[i] },
+                  marker: {
+                    color: CHART_COLORS[i],
+                    line: { color: "rgba(0,0,0,0.08)", width: 0.5 },
+                  },
+                  hovertemplate: "<b>%{x}</b><br>Pearson r = %{y:.3f}<extra>%{fullData.name}</extra>",
                 };
               })}
               layout={{
-                height: 400,
+                height: 420,
                 barmode: "group",
-                xaxis: { title: { text: "Litter" }, tickangle: -45 },
-                yaxis: { title: { text: "Pearson r" }, range: [-1, 1] },
+                bargap: 0.2,
+                xaxis: { title: { text: "Litter", standoff: 15 }, tickangle: -35, tickfont: { size: 10 } },
+                yaxis: { title: { text: "Pearson r", standoff: 10 }, range: [-1, 1] },
                 shapes: [
-                  { type: "line", y0: 0, y1: 0, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: "#334155" } },
+                  { type: "line", y0: 0, y1: 0, x0: 0, x1: 1, xref: "paper", line: { color: SLATE[700], width: 1 } },
                 ],
+                legend: { x: 0.01, y: 0.99, xanchor: "left", yanchor: "top" },
               }}
             />
           </ChartCard>
