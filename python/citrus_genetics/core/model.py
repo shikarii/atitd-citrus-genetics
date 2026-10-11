@@ -14,13 +14,18 @@ A model is a dict:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from citrus_genetics.core._native import is_native_available, native_scan_parent, native_trait_rows
+
 if TYPE_CHECKING:
     import pandas as pd
     from numpy.typing import NDArray
+
+logger = logging.getLogger(__name__)
 
 TRAITS: list[str] = ["color", "sweet", "size", "length"]
 V: int = 1001  # gene / display values 0..1000
@@ -91,6 +96,10 @@ def trait_rows(
         Dict with keys 'none', 's1', 's2' (and optionally 'both'),
         each an array of length V (1001).
     """
+    if is_native_available():
+        offs, kp = kern
+        return native_trait_rows(rule, a, b, offs, kp, rround, need_both)
+
     offs, kp = kern
     pairs = [(a[0], a[1]), (b[0], b[1]), (a[0], b[1]), (b[0], a[1])]
     rows: dict[str, NDArray[np.float64]] = {k: np.zeros(V, dtype=np.float64) for k in ("none", "s1", "s2")}
@@ -266,6 +275,9 @@ class LitterFit:
 
     def _scan_parent(self, parent: str, t: int) -> None:
         """Scan one parent's genes for one trait to maximize log-likelihood."""
+        if is_native_available():
+            self._scan_parent_native(parent, t)
+            return
         rule = self.m["rules"][t]
         vals = self.A if parent == "A" else self.B
         groups = candidates(rule, int(vals[t]), self.m["rround"])
@@ -298,6 +310,54 @@ class LitterFit:
             if s > best[0] + 1e-9:
                 best = (s, g)
         self.genes[(parent, t)] = best[1]
+        self.cols[t] = self._cols(t)
+
+    def _scan_parent_native(self, parent: str, t: int) -> None:
+        """Native C++ fused scan for one parent's genes on one trait."""
+        rule = self.m["rules"][t]
+        vals = self.A if parent == "A" else self.B
+        is_parent_a = parent == "A"
+        offs, kp = self.kern
+
+        cols_dicts = []
+        for col in self.cols:
+            d: dict[str, NDArray[np.float64]] = {
+                "none": col["none"],
+                "s1": col["s1"],
+                "s2": col["s2"],
+            }
+            if "both" in col:
+                d["both"] = col["both"]
+            cols_dicts.append(d)
+
+        clone_lik = self.clone_lik if self.m["clone"] and self.m["clone"] != "nudged" else None
+        clone_mode = ""
+        if self.m["clone"] is True:
+            clone_mode = "exact"
+        elif self.m["clone"] == "nudged":
+            clone_mode = "nudged"
+
+        y_int32 = self.y.astype(np.int32)
+        ll, genes = native_scan_parent(
+            y_int32,
+            t,
+            rule,
+            self.m["rround"],
+            offs,
+            kp,
+            self.m["mut"],
+            self.m.get("p", 0.0) or 0.0,
+            self.c,
+            clone_lik,
+            clone_mode,
+            cols_dicts,
+            self.genes[("A", t)],
+            self.genes[("B", t)],
+            is_parent_a,
+            int(vals[t]),
+            self.need_both,
+        )
+        self.genes[(parent, t)] = tuple(genes)
         self.cols[t] = self._cols(t)
 
     def _scan_joint(self, t: int) -> None:

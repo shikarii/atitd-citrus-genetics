@@ -40,6 +40,11 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 
+# Native build artifacts
+native/build/
+*.pyd
+*.so
+
 # Generated reports
 report.html
 

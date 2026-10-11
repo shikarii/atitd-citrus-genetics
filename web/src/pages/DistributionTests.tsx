@@ -16,8 +16,8 @@ const columns: ColumnDef<DistributionTest, unknown>[] = [
   { accessorKey: "ks_pvalue", header: "KS p-value", cell: (info) => (info.getValue() as number).toFixed(4) },
   { accessorKey: "ks_pvalue_fdr", header: "FDR p-value", cell: (info) => (info.getValue() as number).toFixed(4) },
   { accessorKey: "ks_sig_fdr", header: "FDR Sig?", cell: (info) => (info.getValue() as boolean) ? "Yes" : "No" },
-  { accessorKey: "ad_stat", header: "AD Stat", cell: (info) => (info.getValue() as number).toFixed(3) },
-  { accessorKey: "ad_sig_5pct", header: "AD Sig?", cell: (info) => (info.getValue() as boolean) ? "Yes" : "No" },
+  { accessorKey: "ad_stat", header: "AD Stat", cell: (info) => { const v = info.getValue(); return v != null ? (v as number).toFixed(3) : "N/A"; } },
+  { accessorKey: "ad_sig_5pct", header: "AD Sig?", cell: (info) => { const v = info.getValue(); return v != null ? ((v as boolean) ? "Yes" : "No") : "N/A"; } },
 ];
 
 export function DistributionTests() {
