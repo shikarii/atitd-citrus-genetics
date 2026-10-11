@@ -1,23 +1,26 @@
-"""Does 'Length shown as min/max' beat the claimed 'Length = gene 1' only because it has
-more free values? Fit both to fake data made by the CLAIM model (where gene 1 is the truth).
-If the rival gains about as much on fake data as on real data, the real-data gain is noise."""
-from concurrent.futures import ProcessPoolExecutor
-from model import CLAIM, LitterFit
-from sim_checks import fake_dataset
+"""Legacy entry point — delegates to citrus_genetics.pipelines.length_check.
 
-RIVALS = {"CLAIM": CLAIM,
-          "length=min": {**CLAIM, "rules": ("mean", "min", "max", "min")},
-          "length=max": {**CLAIM, "rules": ("mean", "min", "max", "max")}}
+All functionality has been moved to python/citrus_genetics/pipelines/length_check.py.
+Run via:
+    python -m citrus_genetics.cli.run_all
+"""
 
+import sys
+import warnings
+from pathlib import Path
 
-def job(seed):
-    fake, _ = fake_dataset("CLAIM", seed)
-    return seed, {k: round(sum(LitterFit(d, m).fit() for _, d in fake.groupby("litter", sort=False)), 1)
-                  for k, m in RIVALS.items()}
+warnings.warn(
+    "length_check.py is a legacy wrapper. Use the package pipelines directly.",
+    DeprecationWarning,
+    stacklevel=1,
+)
 
+sys.path.insert(0, str(Path(__file__).parent / "python"))
 
 if __name__ == "__main__":
-    with ProcessPoolExecutor() as ex:
-        for seed, r in ex.map(job, (11, 12, 13, 14, 15)):
-            print(f"fake CLAIM seed {seed}: " + ", ".join(f"{k} {v}" for k, v in r.items())
-                  + f"  gain of length=min over CLAIM: {r['length=min'] - r['CLAIM']:+.1f}")
+    from pathlib import Path as _Path
+    import pandas as _pd
+    from citrus_genetics.pipelines.length_check import run_length_check as _run
+    _df = _pd.read_csv(_Path("data/children.csv"))
+    result = _run(_df)
+    print(result)

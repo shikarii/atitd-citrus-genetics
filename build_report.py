@@ -33,8 +33,15 @@ for key, label in SHOW:
 
 page = (HERE / "report_template.html").read_text(encoding="utf-8")
 page = page.replace("%%COMPARE_ROWS%%", "\n".join(rows))
-for tag, f in (("CSV", "data/children.csv"), ("MODEL", "model.py"), ("COMPARE", "compare.py"),
-               ("SIM", "sim_checks.py"), ("EXTRACT", "extract.py")):
-    page = page.replace(f"%%{tag}%%", html.escape((HERE / f).read_text(encoding="utf-8")))
+PKG = HERE / "python" / "citrus_genetics"
+for tag, f in (
+    ("CSV", "data/children.csv"),
+    ("MODEL", PKG / "core" / "model.py"),
+    ("COMPARE", PKG / "pipelines" / "compare.py"),
+    ("SIM", PKG / "pipelines" / "sim_checks.py"),
+    ("EXTRACT", PKG / "io" / "extract.py"),
+):
+    path = HERE / f if isinstance(f, str) else f
+    page = page.replace(f"%%{tag}%%", html.escape(path.read_text(encoding="utf-8")))
 (HERE / "report.html").write_text(page, encoding="utf-8")
 print("report.html", len(page) // 1024, "KB")

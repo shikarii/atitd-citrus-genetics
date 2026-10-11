@@ -12,6 +12,9 @@ dependencies = [
     "uvicorn>=0.32",
     "pydantic>=2.9",
     "openpyxl>=3.1",
+    "streamlit>=1.40",
+    "plotly>=5.24",
+    "scikit-learn>=1.5",
 ]
 
 [dependency-groups]
@@ -55,6 +58,7 @@ ignore = [
 "python/tests/**/*.py" = ["S101", "D101", "D102", "D103", "D107", "ANN", "PLR2004"]
 "python/citrus_genetics/cli/**/*.py" = ["T201"]  # print is expected in CLI scripts
 "python/citrus_genetics/schemas/**/*.py" = ["D101"]  # Pydantic models are self-documenting
+"python/citrus_genetics/dashboard/**/*.py" = ["T201", "D101", "D102", "D103", "ANN", "INP001"]  # Streamlit pages
 
 [tool.ruff.lint.mccabe]
 max-complexity = 12

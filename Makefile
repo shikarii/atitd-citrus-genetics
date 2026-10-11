@@ -1,6 +1,6 @@
 .PHONY: sync format-python format-check-python lint-python loc-check test-python \
        format format-check lint test quality openapi \
-       run-all run-compare run-simchecks \
+       run-all run-all-fast run-compare run-simchecks dashboard \
        docker-build docker-up docker-down clean
 
 # Python-only targets
@@ -44,11 +44,18 @@ openapi:
 run-all:
 	uv run python -m citrus_genetics.cli.run_all --allow-dirty
 
+run-all-fast:
+	uv run python -m citrus_genetics.cli.run_all --allow-dirty --fast
+
 run-compare:
 	uv run python -m citrus_genetics.cli.run_compare
 
 run-simchecks:
 	uv run python -m citrus_genetics.cli.run_simchecks
+
+# Dashboard
+dashboard:
+	uv run streamlit run python/citrus_genetics/dashboard/app.py
 
 # Docker targets
 docker-build:
