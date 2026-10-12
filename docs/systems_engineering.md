@@ -1661,28 +1661,18 @@ Landing page.
 
 ### 17.2 Architecture
 
-```
-results/current/*.csv
-       |
-       v
-export_web_data.py  (CSV -> JSON conversion)
-       |
-       v
-web/public/data/*.json
-       |
-       v
-interpret_results.py  (Claude CLI primary, deterministic fallback)
-       |
-       +-- claude -p  (opinionated LLM interpretation)
-       |       OR
-       +-- interpret.py  (deterministic Python fallback)
-       |
-       v
-interpretations.json  ->  web/public/data/
-       |
-       v
-FindingsSummary.tsx   (per-page "Data Summary" box)
-Landing.tsx           (synthesized Conclusions section)
+```mermaid
+flowchart TD
+    A["results/current/*.csv"] --> B["export_web_data.py\n(CSV → JSON conversion)"]
+    B --> C["web/public/data/*.json"]
+    C --> D["interpret_results.py"]
+    D --> E{"Claude CLI\navailable?"}
+    E -- Yes --> F["claude -p\n(opinionated LLM interpretation)"]
+    E -- No --> G["interpret.py\n(deterministic Python fallback)"]
+    F --> H["interpretations.json → web/public/data/"]
+    G --> H
+    H --> I["FindingsSummary.tsx\n(per-page Data Summary box)"]
+    H --> J["Landing.tsx\n(synthesized Conclusions section)"]
 ```
 
 The interpretation step uses **Claude CLI** (`claude -p`) as the primary engine to
@@ -1789,12 +1779,10 @@ functionality remains available in pure Python when the extension is not built.
 
 The native layer sits below `core/model.py` in the dependency hierarchy:
 
-```
-model.py  -->  _native.py  -->  _citrus_native.{so,pyd}
-                  ^                    ^
-           Python shim            pybind11 C++20/CUDA
-           (try/except             compiled extension
-            fallback)
+```mermaid
+flowchart LR
+    A["model.py"] --> B["_native.py\n(Python shim,\ntry/except fallback)"]
+    B --> C["_citrus_native.so/.pyd\n(pybind11 C++20/CUDA\ncompiled extension)"]
 ```
 
 `_native.py` provides fallback dispatch: if the compiled extension is
