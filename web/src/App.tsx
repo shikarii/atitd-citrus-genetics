@@ -11,6 +11,7 @@ const Residuals = lazy(() => import("./pages/Residuals").then((m) => ({ default:
 const RSweep = lazy(() => import("./pages/RSweep").then((m) => ({ default: m.RSweep })));
 const DistributionTests = lazy(() => import("./pages/DistributionTests").then((m) => ({ default: m.DistributionTests })));
 const MixtureModels = lazy(() => import("./pages/MixtureModels").then((m) => ({ default: m.MixtureModels })));
+const Weaknesses = lazy(() => import("./pages/Weaknesses").then((m) => ({ default: m.Weaknesses })));
 const GeneLandscape = lazy(() => import("./pages/GeneLandscape").then((m) => ({ default: m.GeneLandscape })));
 const LitterDetail = lazy(() => import("./pages/LitterDetail").then((m) => ({ default: m.LitterDetail })));
 
@@ -29,6 +30,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/methods" element={<Methods />} />
+          <Route path="/weaknesses" element={<Weaknesses />} />
           <Route path="/results/models" element={<Models />} />
           <Route path="/results/mi-matrix" element={<MIMatrix />} />
           <Route path="/results/anomalies" element={<Anomalies />} />

@@ -12,6 +12,7 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
     items: [
       { to: "/", label: "Abstract" },
       { to: "/methods", label: "Methodology" },
+      { to: "/weaknesses", label: "Known Weaknesses" },
     ],
   },
   {
