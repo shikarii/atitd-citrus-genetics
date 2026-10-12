@@ -9,12 +9,12 @@ import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
-const columns: ColumnDef<RSweepEntry, unknown>[] = [
+const columns: ColumnDef<RSweepEntry>[] = [
   { accessorKey: "R", header: "R" },
-  { accessorKey: "fit_ll", header: "Fit LL", cell: (info) => (info.getValue() as number).toFixed(1) },
-  { accessorKey: "cv_ll", header: "CV LL", cell: (info) => (info.getValue() as number).toFixed(1) },
-  { accessorKey: "delta_fit", header: "Delta Fit", cell: (info) => (info.getValue() as number).toFixed(1) },
-  { accessorKey: "delta_cv", header: "Delta CV", cell: (info) => (info.getValue() as number).toFixed(1) },
+  { accessorKey: "fit_ll", header: "Fit LL", cell: (info) => info.getValue<number>().toFixed(1) },
+  { accessorKey: "cv_ll", header: "CV LL", cell: (info) => info.getValue<number>().toFixed(1) },
+  { accessorKey: "delta_fit", header: "Delta Fit", cell: (info) => info.getValue<number>().toFixed(1) },
+  { accessorKey: "delta_cv", header: "Delta CV", cell: (info) => info.getValue<number>().toFixed(1) },
 ];
 
 export function RSweep() {
@@ -25,9 +25,9 @@ export function RSweep() {
   useEffect(() => {
     loadRSweep()
       .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-    loadInterpretations().then(setInterps).catch(() => {});
+      .catch(() => undefined)
+      .finally(() => { setLoading(false); });
+    void loadInterpretations().then(setInterps).catch(() => undefined);
   }, []);
 
   const bestCV = data.length > 0 ? data.reduce((a, b) => (b.cv_ll > a.cv_ll ? b : a)) : null;
@@ -61,12 +61,12 @@ export function RSweep() {
         </p>
       </div>
 
-      <FindingsSummary interpretation={interps["r_sweep"]} />
+      <FindingsSummary interpretation={interps.r_sweep} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="R Values Tested" value={data.length || "..."} />
-        <MetricCard label="Best R (CV)" value={bestCV?.R ?? "..."} detail={`cv_ll = ${bestCV?.cv_ll?.toFixed(1) ?? "..."}`} />
-        <MetricCard label="Best R (Fit)" value={bestFit?.R ?? "..."} detail={`fit_ll = ${bestFit?.fit_ll?.toFixed(1) ?? "..."}`} />
+        <MetricCard label="Best R (CV)" value={bestCV?.R ?? "..."} detail={`cv_ll = ${bestCV?.cv_ll.toFixed(1) ?? "..."}`} />
+        <MetricCard label="Best R (Fit)" value={bestFit?.R ?? "..."} detail={`fit_ll = ${bestFit?.fit_ll.toFixed(1) ?? "..."}`} />
         <MetricCard label="CLAIM Default R" value="150" detail="8 offsets in [-R, +R]" />
       </div>
 
@@ -128,7 +128,7 @@ export function RSweep() {
           <h2 className="text-lg font-semibold text-slate-800 mb-3">R Sweep Results</h2>
           <DataTable
             data={data as unknown as Record<string, unknown>[]}
-            columns={columns as ColumnDef<Record<string, unknown>, unknown>[]}
+            columns={columns as ColumnDef<Record<string, unknown>>[]}
             downloadFilename="r_sweep.csv"
           />
         </div>

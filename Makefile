@@ -1,11 +1,15 @@
 .PHONY: sync format-python format-check-python lint-python loc-check test-python \
+       format-web format-check-web lint-web \
+       format-native format-check-native lint-native \
        format format-check lint test quality openapi \
        run-all run-all-fast run-compare run-simchecks dashboard \
-       export-data build-web deploy \
+       export-data interpret build-web deploy \
        build-native clean-native bench-native \
        docker-build docker-up docker-down clean
 
-# Python-only targets
+# ============================================================
+# Python
+# ============================================================
 sync:
 	uv sync --group dev
 
@@ -27,12 +31,41 @@ lint-python:
 test-python:
 	uv run pytest
 
-# Aggregate targets (Python-only for Phase 1)
-format: format-python
+# ============================================================
+# TypeScript / Web (ESLint + tsc)
+# ============================================================
+lint-web:
+	cd web && npm run lint
 
-format-check: format-check-python
+format-web:
+	cd web && npm run lint:fix
 
-lint: lint-python
+format-check-web: lint-web
+
+# ============================================================
+# C++ / Native (clang-tidy + clang-format)
+# ============================================================
+lint-native:
+	@command -v clang-tidy >/dev/null 2>&1 || { echo "clang-tidy not found, skipping"; exit 0; }
+	cd native && find src include -name '*.cpp' -o -name '*.h' | xargs clang-tidy -p build --warnings-as-errors='*' 2>/dev/null || \
+		echo "Note: clang-tidy requires a compilation database. Run 'cmake -B build -S . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON' in native/ first."
+
+format-native:
+	@command -v clang-format >/dev/null 2>&1 || { echo "clang-format not found, skipping"; exit 0; }
+	cd native && find src include -name '*.cpp' -o -name '*.h' | xargs clang-format -i
+
+format-check-native:
+	@command -v clang-format >/dev/null 2>&1 || { echo "clang-format not found, skipping"; exit 0; }
+	cd native && find src include -name '*.cpp' -o -name '*.h' | xargs clang-format --dry-run --Werror
+
+# ============================================================
+# Aggregate targets (all languages)
+# ============================================================
+format: format-python format-web format-native
+
+format-check: format-check-python format-check-web format-check-native
+
+lint: lint-python lint-web lint-native
 
 test: test-python
 
@@ -42,7 +75,9 @@ quality: format-check lint test
 openapi:
 	uv run python -c "from citrus_genetics.api.app import create_app; import json; app = create_app(); print(json.dumps(app.openapi(), indent=2))" > openapi.json
 
+# ============================================================
 # Pipeline targets
+# ============================================================
 run-all:
 	uv run python -m citrus_genetics.cli.run_all --allow-dirty
 
@@ -59,16 +94,23 @@ run-simchecks:
 dashboard:
 	uv run streamlit run python/citrus_genetics/dashboard/app.py
 
+# ============================================================
 # Web dashboard
+# ============================================================
 export-data:
 	uv run python -m citrus_genetics.cli.export_web_data
+
+interpret:
+	uv run python -m citrus_genetics.cli.interpret_results
 
 build-web: export-data
 	cd web && npm install && npm run build
 
 deploy: run-all-fast build-web
 
+# ============================================================
 # Docker targets
+# ============================================================
 docker-build:
 	docker compose build
 
@@ -78,7 +120,9 @@ docker-up:
 docker-down:
 	docker compose down
 
+# ============================================================
 # Native C++ acceleration
+# ============================================================
 NATIVE_BUILD_DIR = native/build
 
 build-native:
@@ -98,7 +142,9 @@ clean-native:
 bench-native:
 	uv run python -m citrus_genetics.scripts.bench_native
 
+# ============================================================
 # Cleanup
+# ============================================================
 clean: clean-native
 	rm -rf .mypy_cache .pytest_cache .ruff_cache coverage.xml htmlcov __pycache__
 	find python -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true

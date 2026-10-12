@@ -1,0 +1,6 @@
+apiVersion: v2
+name: citrus-genetics
+description: ATITD citrus tree breeding genetics analysis dashboard
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

@@ -116,9 +116,7 @@ export interface RunMeta {
   n_litters: number;
 }
 
-export interface TraitCooccurrence {
-  [trait: string]: { [trait2: string]: number };
-}
+export type TraitCooccurrence = Record<string, Record<string, number>>;
 
 // --- Loaders ---
 

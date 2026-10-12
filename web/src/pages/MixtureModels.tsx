@@ -9,14 +9,14 @@ import { FindingsSummary } from "../components/FindingsSummary";
 import { TEAL, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
-const columns: ColumnDef<MixtureWeight, unknown>[] = [
+const columns: ColumnDef<MixtureWeight>[] = [
   { accessorKey: "litter", header: "Litter" },
   { accessorKey: "n", header: "N" },
-  { accessorKey: "pi_claim", header: "pi (CLAIM)", cell: (info) => (info.getValue() as number).toFixed(4) },
-  { accessorKey: "pi_indep", header: "pi (INDEP)", cell: (info) => (info.getValue() as number).toFixed(4) },
-  { accessorKey: "log_lik_claim_only", header: "LL CLAIM", cell: (info) => (info.getValue() as number).toFixed(1) },
-  { accessorKey: "log_lik_mixture", header: "LL Mixture", cell: (info) => (info.getValue() as number).toFixed(1) },
-  { accessorKey: "delta_ll", header: "Delta LL", cell: (info) => (info.getValue() as number).toFixed(2) },
+  { accessorKey: "pi_claim", header: "pi (CLAIM)", cell: (info) => info.getValue<number>().toFixed(4) },
+  { accessorKey: "pi_indep", header: "pi (INDEP)", cell: (info) => info.getValue<number>().toFixed(4) },
+  { accessorKey: "log_lik_claim_only", header: "LL CLAIM", cell: (info) => info.getValue<number>().toFixed(1) },
+  { accessorKey: "log_lik_mixture", header: "LL Mixture", cell: (info) => info.getValue<number>().toFixed(1) },
+  { accessorKey: "delta_ll", header: "Delta LL", cell: (info) => info.getValue<number>().toFixed(2) },
 ];
 
 export function MixtureModels() {
@@ -27,9 +27,9 @@ export function MixtureModels() {
   useEffect(() => {
     loadMixtureWeights()
       .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-    loadInterpretations().then(setInterps).catch(() => {});
+      .catch(() => undefined)
+      .finally(() => { setLoading(false); });
+    void loadInterpretations().then(setInterps).catch(() => undefined);
   }, []);
 
   const meanPi = data.length > 0
@@ -68,7 +68,7 @@ export function MixtureModels() {
         </p>
       </div>
 
-      <FindingsSummary interpretation={interps["mixture"]} />
+      <FindingsSummary interpretation={interps.mixture} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Mean CLAIM Weight" value={meanPi.toFixed(4)} />
@@ -156,7 +156,7 @@ export function MixtureModels() {
           <h2 className="text-lg font-semibold text-slate-800 mb-3">Mixture Weight Details</h2>
           <DataTable
             data={sorted as unknown as Record<string, unknown>[]}
-            columns={columns as ColumnDef<Record<string, unknown>, unknown>[]}
+            columns={columns as ColumnDef<Record<string, unknown>>[]}
             downloadFilename="mixture_weights.csv"
           />
         </div>

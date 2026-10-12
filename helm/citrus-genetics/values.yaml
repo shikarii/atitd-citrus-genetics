@@ -1,0 +1,40 @@
+# Default values for citrus-genetics Helm chart.
+
+namespace: citrus-genetics
+
+api:
+  image:
+    repository: citrus-genetics-api
+    tag: latest
+    pullPolicy: Never    # Local development — set to IfNotPresent for registries
+  replicas: 1
+  port: 8000
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "512Mi"
+  resultsHostPath: /host-results    # minikube: minikube mount ./results:/host-results
+
+web:
+  image:
+    repository: citrus-genetics-web
+    tag: latest
+    pullPolicy: Never    # Local development — set to IfNotPresent for registries
+  replicas: 1
+  port: 80
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "32Mi"
+    limits:
+      cpu: "200m"
+      memory: "64Mi"
+
+probes:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3

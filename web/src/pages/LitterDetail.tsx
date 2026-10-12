@@ -20,31 +20,31 @@ import {
 import { CHART_COLORS, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
-const childColumns: ColumnDef<Child, unknown>[] = [
+const childColumns: ColumnDef<Child>[] = [
   { accessorKey: "child", header: "Child #" },
   ...TRAITS.map(
-    (t) =>
+    (t): ColumnDef<Child> =>
       ({
         accessorKey: t,
         header: t,
-        cell: (info) => info.getValue() as number,
-      }) as ColumnDef<Child, unknown>,
+        cell: (info) => info.getValue<number>(),
+      }),
   ),
   ...TRAITS.map(
-    (t) =>
+    (t): ColumnDef<Child> =>
       ({
         accessorKey: `A_${t}`,
         header: `A_${t}`,
-        cell: (info) => info.getValue() as number,
-      }) as ColumnDef<Child, unknown>,
+        cell: (info) => info.getValue<number>(),
+      }),
   ),
   ...TRAITS.map(
-    (t) =>
+    (t): ColumnDef<Child> =>
       ({
         accessorKey: `B_${t}`,
         header: `B_${t}`,
-        cell: (info) => info.getValue() as number,
-      }) as ColumnDef<Child, unknown>,
+        cell: (info) => info.getValue<number>(),
+      }),
   ),
 ];
 
@@ -57,12 +57,12 @@ export function LitterDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      loadChildren().then(setChildren).catch(() => {}),
-      loadFittedGenes().then(setGenes).catch(() => {}),
-      loadResiduals().then(setResiduals).catch(() => {}),
-      loadAnomalyScores().then(setAnomalies).catch(() => {}),
-    ]).finally(() => setLoading(false));
+    void Promise.all([
+      loadChildren().then(setChildren).catch(() => undefined),
+      loadFittedGenes().then(setGenes).catch(() => undefined),
+      loadResiduals().then(setResiduals).catch(() => undefined),
+      loadAnomalyScores().then(setAnomalies).catch(() => undefined),
+    ]).finally(() => { setLoading(false); });
   }, []);
 
   const litterChildren = children.filter((c) => c.litter === name);
@@ -120,12 +120,12 @@ export function LitterDetail() {
         <MetricCard label="Children" value={litterChildren.length || "..."} />
         <MetricCard
           label="Log-Likelihood"
-          value={litterGenes?.loglik?.toFixed(1) ?? "..."}
+          value={litterGenes?.loglik.toFixed(1) ?? "..."}
           detail="CLAIM MLE fit"
         />
         <MetricCard
           label="Clone Share"
-          value={litterGenes?.clone_share?.toFixed(4) ?? "..."}
+          value={litterGenes?.clone_share.toFixed(4) ?? "..."}
         />
         {worstChild && (
           <MetricCard
@@ -259,7 +259,7 @@ export function LitterDetail() {
           <h2 className="text-lg font-semibold text-slate-800 mb-3">Children Data</h2>
           <DataTable
             data={litterChildren as unknown as Record<string, unknown>[]}
-            columns={childColumns as ColumnDef<Record<string, unknown>, unknown>[]}
+            columns={childColumns as ColumnDef<Record<string, unknown>>[]}
             downloadFilename={`${name}_children.csv`}
           />
         </div>

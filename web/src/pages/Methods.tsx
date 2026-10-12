@@ -8,7 +8,7 @@ export function Methods() {
   const [contentEl, setContentEl] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    loadMethodology().then(setMd).catch(() => setMd("*Failed to load methodology document.*"));
+    loadMethodology().then(setMd).catch(() => { setMd("*Failed to load methodology document.*"); });
   }, []);
 
   const handleRendered = useCallback((el: HTMLElement) => {

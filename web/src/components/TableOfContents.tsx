@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface TOCItem {
   id: string;
@@ -10,8 +10,31 @@ interface TableOfContentsProps {
   contentEl: HTMLElement | null;
 }
 
+function ensureHeadingIds(contentEl: HTMLElement): TOCItem[] {
+  const headings = contentEl.querySelectorAll<HTMLElement>("h1, h2, h3");
+  const tocItems: TOCItem[] = [];
+  headings.forEach((h, i) => {
+    if (!h.id) {
+      h.id = `h-${String(i)}-${h.textContent
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")}`;
+    }
+    tocItems.push({
+      id: h.id,
+      text: h.textContent,
+      level: h.tagName.toLowerCase(),
+    });
+  });
+  return tocItems;
+}
+
 export function TableOfContents({ contentEl }: TableOfContentsProps) {
-  const [items, setItems] = useState<TOCItem[]>([]);
+  const items = useMemo(() => {
+    if (!contentEl) return [];
+    return ensureHeadingIds(contentEl);
+  }, [contentEl]);
+
   const [activeId, setActiveId] = useState("");
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -19,21 +42,6 @@ export function TableOfContents({ contentEl }: TableOfContentsProps) {
     if (!contentEl) return;
 
     const headings = contentEl.querySelectorAll<HTMLElement>("h1, h2, h3");
-    const tocItems: TOCItem[] = [];
-    headings.forEach((h, i) => {
-      if (!h.id) {
-        h.id = `h-${String(i)}-${(h.textContent ?? "")
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "")}`;
-      }
-      tocItems.push({
-        id: h.id,
-        text: h.textContent ?? "",
-        level: h.tagName.toLowerCase(),
-      });
-    });
-    setItems(tocItems);
 
     observerRef.current?.disconnect();
     const observer = new IntersectionObserver(
@@ -47,9 +55,9 @@ export function TableOfContents({ contentEl }: TableOfContentsProps) {
       { rootMargin: "-10% 0px -80% 0px" },
     );
     observerRef.current = observer;
-    headings.forEach((h) => observer.observe(h));
+    headings.forEach((h) => { observer.observe(h); });
 
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); };
   }, [contentEl]);
 
   if (items.length === 0) return null;

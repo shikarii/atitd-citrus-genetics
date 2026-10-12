@@ -17,9 +17,9 @@ export function MIMatrix() {
   useEffect(() => {
     loadMIMatrix()
       .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-    loadInterpretations().then(setInterps).catch(() => {});
+      .catch(() => undefined)
+      .finally(() => { setLoading(false); });
+    void loadInterpretations().then(setInterps).catch(() => undefined);
   }, []);
 
   const { heatmapZ, heatmapX, heatmapY, maxExcess, nHighZ } = useMemo(() => {
@@ -80,7 +80,7 @@ export function MIMatrix() {
         </p>
       </div>
 
-      <FindingsSummary interpretation={interps["mi_matrix"]} />
+      <FindingsSummary interpretation={interps.mi_matrix} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Parent-Child Pairs" value={data.length || "..."} />

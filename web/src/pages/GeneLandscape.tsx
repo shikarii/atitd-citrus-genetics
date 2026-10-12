@@ -24,8 +24,8 @@ export function GeneLandscape() {
   useEffect(() => {
     loadFittedGenes()
       .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => undefined)
+      .finally(() => { setLoading(false); });
   }, []);
 
   const genePoints = useMemo(() => {
@@ -35,7 +35,7 @@ export function GeneLandscape() {
         for (const trait of TRAITS) {
           const key = `${parent}_${trait}_genes`;
           const val = String(row[key] ?? "");
-          const match = val.match(/(\d+)\s*[,/]\s*(\d+)/);
+          const match = /(\d+)\s*[,/]\s*(\d+)/.exec(val);
           if (match) {
             points.push({
               litter: row.litter,
@@ -59,13 +59,13 @@ export function GeneLandscape() {
     ? data.reduce((s, d) => s + d.clone_share, 0) / data.length
     : 0;
 
-  const tableColumns: ColumnDef<FittedGenes, unknown>[] = [
+  const tableColumns: ColumnDef<FittedGenes>[] = [
     { accessorKey: "litter", header: "Litter" },
-    { accessorKey: "loglik", header: "Log-Lik", cell: (info) => (info.getValue() as number).toFixed(1) },
-    { accessorKey: "clone_share", header: "Clone Share", cell: (info) => (info.getValue() as number).toFixed(3) },
+    { accessorKey: "loglik", header: "Log-Lik", cell: (info) => info.getValue<number>().toFixed(1) },
+    { accessorKey: "clone_share", header: "Clone Share", cell: (info) => info.getValue<number>().toFixed(3) },
     ...TRAITS.flatMap((t) => [
-      { accessorKey: `A_${t}_genes`, header: `A ${t}` } as ColumnDef<FittedGenes, unknown>,
-      { accessorKey: `B_${t}_genes`, header: `B ${t}` } as ColumnDef<FittedGenes, unknown>,
+      { accessorKey: `A_${t}_genes`, header: `A ${t}` },
+      { accessorKey: `B_${t}_genes`, header: `B ${t}` },
     ]),
   ];
 
@@ -222,8 +222,8 @@ export function GeneLandscape() {
         <div>
           <h2 className="text-lg font-semibold text-slate-800 mb-3">Fitted Gene Values</h2>
           <DataTable
-            data={data as unknown as Record<string, unknown>[]}
-            columns={tableColumns as ColumnDef<Record<string, unknown>, unknown>[]}
+            data={data}
+            columns={tableColumns as ColumnDef<Record<string, unknown>>[]}
             downloadFilename="fitted_genes.csv"
           />
         </div>

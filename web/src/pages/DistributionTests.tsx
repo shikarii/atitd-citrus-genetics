@@ -9,16 +9,16 @@ import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, TEAL, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
-const columns: ColumnDef<DistributionTest, unknown>[] = [
+const columns: ColumnDef<DistributionTest>[] = [
   { accessorKey: "litter", header: "Litter" },
   { accessorKey: "trait", header: "Trait" },
   { accessorKey: "n_observed", header: "N" },
-  { accessorKey: "ks_stat", header: "KS Stat", cell: (info) => (info.getValue() as number).toFixed(4) },
-  { accessorKey: "ks_pvalue", header: "KS p-value", cell: (info) => (info.getValue() as number).toFixed(4) },
-  { accessorKey: "ks_pvalue_fdr", header: "FDR p-value", cell: (info) => (info.getValue() as number).toFixed(4) },
-  { accessorKey: "ks_sig_fdr", header: "FDR Sig?", cell: (info) => (info.getValue() as boolean) ? "Yes" : "No" },
-  { accessorKey: "ad_stat", header: "AD Stat", cell: (info) => { const v = info.getValue(); return v != null ? (v as number).toFixed(3) : "N/A"; } },
-  { accessorKey: "ad_sig_5pct", header: "AD Sig?", cell: (info) => { const v = info.getValue(); return v != null ? ((v as boolean) ? "Yes" : "No") : "N/A"; } },
+  { accessorKey: "ks_stat", header: "KS Stat", cell: (info) => info.getValue<number>().toFixed(4) },
+  { accessorKey: "ks_pvalue", header: "KS p-value", cell: (info) => info.getValue<number>().toFixed(4) },
+  { accessorKey: "ks_pvalue_fdr", header: "FDR p-value", cell: (info) => info.getValue<number>().toFixed(4) },
+  { accessorKey: "ks_sig_fdr", header: "FDR Sig?", cell: (info) => info.getValue<boolean>() ? "Yes" : "No" },
+  { accessorKey: "ad_stat", header: "AD Stat", cell: (info) => { const v = info.getValue<number | null>(); return v !== null ? v.toFixed(3) : "N/A"; } },
+  { accessorKey: "ad_sig_5pct", header: "AD Sig?", cell: (info) => { const v = info.getValue<boolean | null>(); return v !== null ? (v ? "Yes" : "No") : "N/A"; } },
 ];
 
 export function DistributionTests() {
@@ -29,9 +29,9 @@ export function DistributionTests() {
   useEffect(() => {
     loadDistributionTests()
       .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-    loadInterpretations().then(setInterps).catch(() => {});
+      .catch(() => undefined)
+      .finally(() => { setLoading(false); });
+    void loadInterpretations().then(setInterps).catch(() => undefined);
   }, []);
 
   const nSigFDR = data.filter((d) => d.ks_sig_fdr).length;
@@ -50,7 +50,7 @@ export function DistributionTests() {
     const text = LITTERS.map((litter) =>
       TRAITS.map((trait) => {
         const entry = data.find((d) => d.litter === litter && d.trait === trait);
-        return entry?.ks_stat?.toFixed(3) ?? "";
+        return entry?.ks_stat.toFixed(3) ?? "";
       }),
     );
     return { heatmapZ: z, heatmapText: text };
@@ -84,7 +84,7 @@ export function DistributionTests() {
         </p>
       </div>
 
-      <FindingsSummary interpretation={interps["distribution_tests"]} />
+      <FindingsSummary interpretation={interps.distribution_tests} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Total Tests" value={data.length || "..."} detail="14 litters x 4 traits" />
@@ -185,7 +185,7 @@ export function DistributionTests() {
           <h2 className="text-lg font-semibold text-slate-800 mb-3">All Test Results</h2>
           <DataTable
             data={data as unknown as Record<string, unknown>[]}
-            columns={columns as ColumnDef<Record<string, unknown>, unknown>[]}
+            columns={columns as ColumnDef<Record<string, unknown>>[]}
             downloadFilename="distribution_tests.csv"
           />
         </div>

@@ -22,11 +22,11 @@ export function Residuals() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      loadResiduals().then(setResiduals).catch(() => {}),
-      loadSiblingCorrelations().then(setSibCorr).catch(() => {}),
-    ]).finally(() => setLoading(false));
-    loadInterpretations().then(setInterps).catch(() => {});
+    void Promise.all([
+      loadResiduals().then(setResiduals).catch(() => undefined),
+      loadSiblingCorrelations().then(setSibCorr).catch(() => undefined),
+    ]).finally(() => { setLoading(false); });
+    void loadInterpretations().then(setInterps).catch(() => undefined);
   }, []);
 
   const traitResiduals = TRAITS.map((t) => ({
@@ -73,7 +73,7 @@ export function Residuals() {
         </p>
       </div>
 
-      <FindingsSummary interpretation={interps["residuals"]} />
+      <FindingsSummary interpretation={interps.residuals} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Observations" value={residuals.length || "..."} />

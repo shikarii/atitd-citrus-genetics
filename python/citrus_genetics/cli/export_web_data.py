@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from citrus_genetics.analysis.interpret import generate_interpretations
+from citrus_genetics.cli.interpret_results import run_interpretation
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 RESULTS_DIRS = [
@@ -127,8 +127,8 @@ def main() -> None:
     else:
         print(f"  SKIP methodology.md (not found)")
 
-    # Generate interpretation summaries
-    interps = generate_interpretations()
+    # Generate interpretation summaries (Claude CLI with deterministic fallback)
+    interps = run_interpretation()
     interps_path = OUTPUT_DIR / "interpretations.json"
     interps_path.write_text(
         json.dumps(interps, indent=None), encoding="utf-8"

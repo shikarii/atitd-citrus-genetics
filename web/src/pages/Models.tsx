@@ -9,17 +9,17 @@ import { FindingsSummary } from "../components/FindingsSummary";
 import { TEAL, ACCENT, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
-const columns: ColumnDef<ModelComparison, unknown>[] = [
+const columns: ColumnDef<ModelComparison>[] = [
   { accessorKey: "model", header: "Model" },
   {
     accessorKey: "fit_ll",
     header: "Fit LL",
-    cell: (info) => (info.getValue() as number).toFixed(1),
+    cell: (info) => info.getValue<number>().toFixed(1),
   },
   {
     accessorKey: "cv_ll",
     header: "CV LL",
-    cell: (info) => (info.getValue() as number).toFixed(1),
+    cell: (info) => info.getValue<number>().toFixed(1),
   },
   { accessorKey: "children_impossible", header: "Impossible Children" },
 ];
@@ -32,9 +32,9 @@ export function Models() {
   useEffect(() => {
     loadModelComparison()
       .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-    loadInterpretations().then(setInterps).catch(() => {});
+      .catch(() => undefined)
+      .finally(() => { setLoading(false); });
+    void loadInterpretations().then(setInterps).catch(() => undefined);
   }, []);
 
   const sorted = [...data].sort((a, b) => b.cv_ll - a.cv_ll);
@@ -70,11 +70,11 @@ export function Models() {
         </p>
       </div>
 
-      <FindingsSummary interpretation={interps["models"]} />
+      <FindingsSummary interpretation={interps.models} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Models Tested" value={data.length || "..."} />
-        <MetricCard label="Best Model" value={best?.model ?? "..."} detail={`cv_ll = ${best?.cv_ll?.toFixed(1) ?? "..."}`} />
+        <MetricCard label="Best Model" value={best?.model ?? "..."} detail={`cv_ll = ${best?.cv_ll.toFixed(1) ?? "..."}`} />
         <MetricCard label="CV LL Gap (1st - 2nd)" value={gap} detail="Log-likelihood units" />
         <MetricCard label="Models with Impossible Children" value={nImpossible} />
       </div>
@@ -176,8 +176,8 @@ export function Models() {
         <div>
           <h2 className="text-lg font-semibold text-slate-800 mb-3">Full Model Comparison Table</h2>
           <DataTable
-            data={sorted as unknown as Record<string, unknown>[]}
-            columns={columns as ColumnDef<Record<string, unknown>, unknown>[]}
+            data={sorted}
+            columns={columns as ColumnDef<Record<string, unknown>>[]}
             downloadFilename="model_comparison.csv"
           />
         </div>

@@ -1,11 +1,9 @@
 """LOC (lines of code) limit enforcement for the citrus-genetics project.
 
-Scans all Python files under python/ and reports:
-- Files exceeding the per-file line limit (default 600).
-- Functions or methods exceeding the per-function line limit (default 60).
-
-HTML files are exempt. TypeScript files are checked for file-level line counts
-only (no AST parsing for TS; violations are reported as file-level only).
+Scans Python, TypeScript, and C++ files for LOC violations:
+- Python files (python/): per-file (600) and per-function (60) limits.
+- TypeScript files (web/src/): per-file (400) limits.
+- C++ files (native/): per-file (500) limits.
 
 Exit code 0 means no violations. Exit code 1 means at least one violation was
 found. All violation output is written to stderr.
@@ -15,9 +13,11 @@ Usage::
     python -m citrus_genetics.scripts.check_loc [options]
 
 Options:
-    --max-file-lines INT      Maximum lines per file (default: 600).
-    --max-function-lines INT  Maximum lines per function/method (default: 60).
-    --root PATH               Root directory to scan (default: python/).
+    --max-file-lines INT         Maximum lines per Python file (default: 600).
+    --max-function-lines INT     Maximum lines per function/method (default: 60).
+    --max-ts-file-lines INT      Maximum lines per TypeScript file (default: 400).
+    --max-cpp-file-lines INT     Maximum lines per C++ file (default: 500).
+    --root PATH                  Root directory to scan (default: python/).
 """
 
 from __future__ import annotations
@@ -159,6 +159,39 @@ def scan_python_files(
     return file_violations, function_violations
 
 
+def scan_typed_files(
+    root: Path,
+    max_file_lines: int,
+    extensions: tuple[str, ...],
+) -> list[FileViolation]:
+    """Scan files with given extensions under *root* for file-level LOC violations.
+
+    Args:
+        root: Directory to scan recursively.
+        max_file_lines: Maximum allowed lines per file.
+        extensions: File extensions to match (e.g., ('.ts', '.tsx')).
+
+    Returns:
+        A list of file-level violations.
+    """
+    violations: list[FileViolation] = []
+
+    if not root.is_dir():
+        return violations
+
+    for ext in extensions:
+        for path in sorted(root.rglob(f"*{ext}")):
+            # Skip node_modules, dist, build directories
+            parts = path.parts
+            if any(p in ("node_modules", "dist", "build", "__pycache__") for p in parts):
+                continue
+            line_count = count_file_lines(path)
+            if line_count > max_file_lines:
+                violations.append(FileViolation(path, line_count, max_file_lines))
+
+    return violations
+
+
 # ---------------------------------------------------------------------------
 # Reporting
 # ---------------------------------------------------------------------------
@@ -207,30 +240,62 @@ def build_parser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(
         prog="check_loc",
-        description="Enforce per-file and per-function LOC limits on Python source.",
+        description="Enforce per-file and per-function LOC limits across all languages.",
     )
     parser.add_argument(
         "--max-file-lines",
         type=int,
         default=600,
         metavar="INT",
-        help="Maximum lines per file (default: 600).",
+        help="Maximum lines per Python file (default: 600).",
     )
     parser.add_argument(
         "--max-function-lines",
         type=int,
         default=60,
         metavar="INT",
-        help="Maximum lines per function/method (default: 60).",
+        help="Maximum lines per Python function/method (default: 60).",
+    )
+    parser.add_argument(
+        "--max-ts-file-lines",
+        type=int,
+        default=400,
+        metavar="INT",
+        help="Maximum lines per TypeScript file (default: 400).",
+    )
+    parser.add_argument(
+        "--max-cpp-file-lines",
+        type=int,
+        default=500,
+        metavar="INT",
+        help="Maximum lines per C++ file (default: 500).",
     )
     parser.add_argument(
         "--root",
         type=Path,
         default=Path("python"),
         metavar="PATH",
-        help="Root directory to scan (default: python/).",
+        help="Root directory for Python scan (default: python/).",
     )
     return parser
+
+
+def _scan_and_report_typed(
+    label: str,
+    roots: list[Path],
+    max_lines: int,
+    extensions: tuple[str, ...],
+) -> list[FileViolation]:
+    """Scan typed files across roots and report violations."""
+    violations: list[FileViolation] = []
+    for r in roots:
+        violations.extend(scan_typed_files(r, max_lines, extensions))
+    if violations:
+        sys.stderr.write(f"LOC check: {label} file violations (limit: {max_lines})\n")
+        for fv in violations:
+            sys.stderr.write(f"  {fv.path}  ({fv.line_count} lines)\n")
+        sys.stderr.write("\n")
+    return violations
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -242,29 +307,30 @@ def main(argv: list[str] | None = None) -> int:
     Returns:
         Exit code: 0 for no violations, 1 for one or more violations.
     """
-    parser = build_parser()
-    args = parser.parse_args(argv)
+    args = build_parser().parse_args(argv)
 
-    root: Path = args.root
-    max_file_lines: int = args.max_file_lines
-    max_function_lines: int = args.max_function_lines
+    all_fv: list[FileViolation] = []
+    all_fnv: list[FunctionViolation] = []
 
-    if not root.is_dir():
-        sys.stderr.write(f"check_loc: root directory not found: {root}\n")
-        return 1
+    # Python
+    if args.root.is_dir():
+        fv, fnv = scan_python_files(args.root, args.max_file_lines, args.max_function_lines)
+        all_fv.extend(fv)
+        all_fnv.extend(fnv)
+        report_violations(fv, fnv)
 
-    file_violations, function_violations = scan_python_files(root, max_file_lines, max_function_lines)
+    # TypeScript
+    all_fv.extend(_scan_and_report_typed("TypeScript", [Path("web/src")], args.max_ts_file_lines, (".ts", ".tsx")))
 
-    report_violations(file_violations, function_violations)
+    # C++
+    all_fv.extend(_scan_and_report_typed(
+        "C++", [Path("native/src"), Path("native/include")], args.max_cpp_file_lines, (".cpp", ".h", ".hpp", ".cu"),
+    ))
 
-    total = len(file_violations) + len(function_violations)
+    total = len(all_fv) + len(all_fnv)
     if total:
-        sys.stderr.write(
-            f"check_loc: {total} violation(s) found"
-            f" ({len(file_violations)} file, {len(function_violations)} function)\n"
-        )
+        sys.stderr.write(f"check_loc: {total} violation(s) found ({len(all_fv)} file, {len(all_fnv)} function)\n")
         return 1
-
     return 0
 
 

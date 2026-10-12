@@ -36,6 +36,10 @@ web/types/
 # Docker
 docker-compose.override.yml
 
+# Environment / secrets
+.env
+.env.local
+
 # OS
 .DS_Store
 Thumbs.db

@@ -11,7 +11,7 @@ import {
 
 interface DataTableProps<T> {
   data: T[];
-  columns: ColumnDef<T, unknown>[];
+  columns: ColumnDef<T>[];
   defaultSort?: SortingState;
   filterPlaceholder?: string;
   downloadFilename?: string;
@@ -40,11 +40,17 @@ export function DataTable<T extends Record<string, unknown>>({
 
   const csvContent = useMemo(() => {
     if (!downloadFilename) return null;
-    const headers = columns.map((c) => String((c as { header?: string }).header ?? (c as { accessorKey?: string }).accessorKey ?? ""));
+    const headers = columns.map((c) => (c as { header?: string }).header ?? (c as { accessorKey?: string }).accessorKey ?? "");
     const rows = data.map((row) =>
       columns.map((c) => {
         const key = (c as { accessorKey?: string }).accessorKey;
-        return key ? String(row[key] ?? "") : "";
+        if (!key) return "";
+        const val = row[key];
+        if (val === null || val === undefined) return "";
+        if (typeof val === "string") return val;
+        if (typeof val === "number" || typeof val === "boolean") return String(val);
+        if (typeof val === "object") return JSON.stringify(val);
+        return "";
       }),
     );
     return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -56,7 +62,7 @@ export function DataTable<T extends Record<string, unknown>>({
         <input
           type="text"
           value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
+          onChange={(e) => { setGlobalFilter(e.target.value); }}
           placeholder={filterPlaceholder}
           className="px-3 py-1.5 text-sm border border-slate-300 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-neutral-400 focus:border-transparent w-64"
         />

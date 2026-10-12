@@ -9,22 +9,22 @@ import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, TEAL, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
-const columns: ColumnDef<AnomalyScore, unknown>[] = [
+const columns: ColumnDef<AnomalyScore>[] = [
   { accessorKey: "rank", header: "Rank" },
   { accessorKey: "litter", header: "Litter" },
   { accessorKey: "child_num", header: "Child #" },
   {
     accessorKey: "log_lik",
     header: "Log-Likelihood",
-    cell: (info) => (info.getValue() as number).toFixed(3),
+    cell: (info) => info.getValue<number>().toFixed(3),
   },
   ...TRAITS.map(
-    (t) =>
+    (t): ColumnDef<AnomalyScore> =>
       ({
         accessorKey: t,
         header: t,
-        cell: (info) => info.getValue() as number,
-      }) as ColumnDef<AnomalyScore, unknown>,
+        cell: (info) => info.getValue<number>(),
+      }),
   ),
 ];
 
@@ -36,9 +36,9 @@ export function Anomalies() {
   useEffect(() => {
     loadAnomalyScores()
       .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-    loadInterpretations().then(setInterps).catch(() => {});
+      .catch(() => undefined)
+      .finally(() => { setLoading(false); });
+    void loadInterpretations().then(setInterps).catch(() => undefined);
   }, []);
 
   const sorted = [...data].sort((a, b) => a.log_lik - b.log_lik);
@@ -78,12 +78,12 @@ export function Anomalies() {
         </p>
       </div>
 
-      <FindingsSummary interpretation={interps["anomalies"]} />
+      <FindingsSummary interpretation={interps.anomalies} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Total Children" value={data.length || "..."} />
         <MetricCard label="Mean Log-Lik" value={meanLL.toFixed(2)} />
-        <MetricCard label="Worst Log-Lik" value={sorted[0]?.log_lik?.toFixed(2) ?? "..."} detail={sorted[0] ? `${sorted[0].litter} #${sorted[0].child_num}` : ""} />
+        <MetricCard label="Worst Log-Lik" value={sorted[0]?.log_lik.toFixed(2) ?? "..."} detail={sorted[0] ? `${sorted[0].litter} #${sorted[0].child_num}` : ""} />
         <MetricCard label="Children with LL < -5" value={nBelowMinus5} />
       </div>
 
@@ -159,7 +159,7 @@ export function Anomalies() {
           <h2 className="text-lg font-semibold text-slate-800 mb-3">Top 10 Most Anomalous Children</h2>
           <DataTable
             data={worst10 as unknown as Record<string, unknown>[]}
-            columns={columns as ColumnDef<Record<string, unknown>, unknown>[]}
+            columns={columns as ColumnDef<Record<string, unknown>>[]}
             downloadFilename="anomaly_scores.csv"
           />
         </div>
