@@ -1,93 +1,205 @@
-# Citrus-tree genetics: the model in code
+# Citrus Genetics
 
-A reproducible test of the proposed inheritance model for ATITD citrus trees
-(Indonesian hives). It uses all 692 logged children from 14 litters (both parents known for each).
+Statistical model validation and breeding analytics for *A Tale in the Desert* citrus tree genetics.
 
-## Files
+Tests whether the proposed 8-gene inheritance model explains all 692 logged children from 14 litters,
+comparing the claimed mechanism against 30 rival models via maximum likelihood estimation.
 
-| File | What it does |
-|---|---|
-| `data/children.csv` / `.parquet` | The raw data, one row per child: litter, both parents' 4 values, the child's 4 values. Nothing cleaned or dropped. |
-| `extract.py` | Rebuilds `data/` from the `Data` tab of the breeding-log workbook `IndoHives 2026 Data.xlsx` (not included here; `data/children.csv` holds every logged child, so you don't need it). |
-| `model.py` | The model: an exact probability for every logged child, given the parents' (partly hidden) genes. The hidden genes are fitted by maximum likelihood, separately for each litter and each model. |
-| `compare.py` | Fits the claimed model and 31 rival models to the same data → `results/model_comparison.csv`, `results/fitted_genes_claim.csv`. About 20 min. |
-| `sim_checks.py` | Ground truth: makes fake data from known models and checks that the method picks the right one; also posterior-predictive checks → `results/sim_checks.txt`. About 35 min. |
-| `report.html` | The same results as one readable page (built by `build_report.py` from `report_template.html`). |
-| `length_check.py` | Checks whether a rival Length rule wins only because it has more free values → `results/length_check.txt`. |
+**Live dashboard:** [shikarii.github.io/atitd-citrus-genetics](https://shikarii.github.io/atitd-citrus-genetics)
 
-Run with Python 3.12, `pip install numpy pandas scipy openpyxl pyarrow`:
-`python compare.py && python sim_checks.py 0.14 && python length_check.py`
+## Research Design
 
-## The claimed model
+### The Claimed Model
 
-- Every tree has 8 genes, 2 per trait, integers 0–1000.
-- Shown value: Color = average of its 2 genes (rounded half up), Sweet = lower gene,
-  Size = higher gene, Length = gene 1.
-- A child copies each gene from a random parent (8 coin flips, slot kept).
-- Then exactly one of the 8 genes gets a nudge: a whole number from −150 to +150, all equally likely, clamped to 0–1000.
+Every citrus tree has 8 hidden genes (2 per trait), integers 0--1000. Observable traits are derived
+from gene pairs by deterministic display rules:
 
-## Results
+| Trait  | Display Rule         | Identifiability |
+|--------|----------------------|-----------------|
+| Color  | mean(g1, g2) half-up | Sum only        |
+| Sweet  | min(g1, g2)          | Full            |
+| Size   | max(g1, g2)          | Full            |
+| Length | g1 only              | Lower bound     |
 
-**Fit.** The claimed model explains all 692 children. The log-likelihood (higher is better) is −5462.5. Selected rivals:
+**Inheritance:** each of a child's 8 genes is copied from one parent (fair coin flip, slot-preserving).
+Then exactly one of the 8 genes receives a uniform integer nudge in [-150, +150], clamped to [0, 1000].
 
-| Model | Fit | vs claim |
-|---|---|---|
-| Claimed model | −5462.5 | 0 |
-| Triangular nudge ±150 (more small nudges) | −5548.1 | −86 |
-| Uniform ±160 / ±175 / ±200 | −5478 / −5497 / −5528 | −16 / −34 / −65 |
-| Uniform ±140 / ±125 | −5816 / −6253 | −353 / −791 (15 / 30 children impossible) |
-| Every gene nudged independently (best p = 0.14) | −5609.8 | −147 |
-| Sweet shown as higher gene | −5531.5 | −69 |
-| Sweet shown as average / as gene 1 | −6104 / −6392 | −642 / −929 |
-| Size shown as average / as gene 1 | −6007 / −6431 | −544 / −969 |
-| Color shown as lower / higher gene | −6272 / −6351 | −809 / −889 |
-| One gene per trait (no hidden genes) | −10487 | −5024 (169 children impossible) |
+### Validation Approach
 
-The full table is in `results/model_comparison.csv`.
+1. **In-sample fit (log-likelihood):** fit hidden genes per litter by coordinate-ascent MLE; rank all 30
+   model variants by total log-likelihood
+2. **Synthetic ground-truth:** generate 9 fake datasets from 3 known models, confirm the fitter recovers
+   the true model 9/9 times
+3. **Posterior-predictive checks:** simulate 300 datasets from the fitted model, compare summary statistics
+   against real data
+4. **Pedigree consistency:** parents appearing in multiple litters yield consistent hidden-gene estimates
+5. **Sensitivity analyses:** nudge-range sweep, mutual information, residual diagnostics, distribution
+   tests, mixture-model exploration, anomaly scoring
 
-**Does the method find the truth?** We made fake datasets of the same 14 litters from 3 known
-models (the claimed model, independent nudges, triangular nudges), 3 datasets each. Fitting all 3 models,
-the true one had the best fit **9 times out of 9**. The gaps on fake data from the claimed model
-(about −150 for independent nudges, about −65 for triangular) match the gaps on the real data.
+### Key Results
 
-**One nudge per child, not independent nudges.** If nudges were independent per gene (the best rival),
-about 97 of the 692 children (95% range 78–115) would show nudges in two or more traits. The real data has 1.
+The claimed model explains all 692 children with log-likelihood -5462.5. Selected comparisons:
 
-**Posterior-predictive check** (real data vs 300 simulations of the fitted claimed model):
+| Rival                          | LL       | Gap   |
+|--------------------------------|----------|-------|
+| Independent per-gene nudges    | -5609.8  | -147  |
+| Triangular nudge +/-150        | -5548.1  | -86   |
+| Uniform +/-200                 | -5528.0  | -65   |
+| Sweet = max (swapped rule)     | -5531.5  | -69   |
+| One gene per trait (no hidden) | -10487.0 | -5024 |
 
-| | Real | Simulated (95% range) |
-|---|---|---|
-| Children with no visible change | 257 | 226–279 |
-| Children with 1 trait changed | 435 | 413–466 |
-| Children with 2+ traits changed | 0 | 0–0 |
-| Color / Sweet / Size / Length changed | 170 / 92 / 90 / 83 | 143–192 / 76–111 / 75–112 / 67–102 |
+Full results and interactive charts on the [live dashboard](https://shikarii.github.io/atitd-citrus-genetics).
 
-**Pedigree consistency.** Each litter is fitted on its own. Start 2 (325/311/408/621) is a parent in
-4 litters (1a, 1b, 1c, 7) and Start 1 in 3 (1a, 1b, 1c). The separate fits agree: Start 2 Sweet = 311
-+ hidden 320 in 4 of 4, Start 2 Size = 408 + hidden 394 in 3 of 4 (1b: 408/408), Start 1 Size = 642 +
-hidden 612 in 3 of 3, Start 1 hidden Sweet ≥ 720 in 3 of 3 (fits 720, 721, 766; only a lower bound is
-identifiable).
+## Architecture
 
-## Caveats and things that went against the model
+```
+atitd-citrus-genetics/
+  python/citrus_genetics/        Python package (core engine + API + dashboard)
+  native/                        C++20/AVX2 acceleration (pybind11)
+  web/                           React/TypeScript frontend
+  data/                          Dataset (692 children, 14 litters)
+  results/                       Pipeline outputs
+  docs/                          Research methodology & systems engineering spec
+```
 
-- **Held-out scoring prefers the rival.** With 2-fold held-out scoring (fit on half the children,
-  score the other half), the independent-nudge model wins by 253. We checked this on fake data:
-  held-out scoring also picks the independent-nudge model on data that was **made by the claimed model**
-  (3 of 3). It even does so on data made by the triangular model (2 of 3). The reason: a strict model calls a
-  held-out child impossible when it shows a hidden gene the other half never revealed (20 such children
-  here). On this kind of data, held-out scoring is biased toward lenient models, so we judge by fit, plus the
-  fake-data checks that confirm fit picks the truth. All models have the same number of fitted hidden genes.
-- **Length.** "Length = gene 1" cannot be told apart from "Length = lower (or higher) gene" by fit alone.
-  The rival gains 59 on real data, and 54–66 on fake data where gene 1 is the truth. So the gain is just the
-  extra free values. Held-out scoring prefers gene 1 by 392. Only gene 1 is ever seen; the second Length
-  gene is inferred from the nudge rate, not seen.
-- **Hidden genes are often only bounded.** On fake data the fit recovers 68% of hidden Sweet/Size
-  genes exactly. The rest are only known as "at least X" or "at most X".
-- **Hive1b.** About 34% of its children are best explained as a full copy of a parent that then gets the
-  usual single nudge (only 8 of 72 are exact copies). Copying explains it far better than no copying
-  (log-likelihood +41). No other litter needs copying (1a and 1c: 0%). 1b is the only litter whose parents
-  stood in different regions; why it copies is open.
-- Color's split between its two genes is not identifiable, only their sum. So clamping at 0/1000 for
-  Color is approximate.
-- This is a fit to observed data. It does not prove this is the game's code. Other mechanisms that produce
-  the same probabilities would fit equally well.
+### Compute Layer
+
+```
+model.py  --->  _native.py  --->  _citrus_native.{pyd,so}
+   |                ^                      ^
+   |          try/except fallback     C++20 / AVX2 / CUDA
+   v
+analysis/     7 pluggable modules (MI, anomaly, residuals, r-sweep, etc.)
+pipelines/    30-model comparison, synthetic validation, sim checks
+cli/          run_all, run_compare, run_simchecks, export_web_data
+```
+
+The statistical engine in `core/model.py` computes exact per-child likelihoods given parents' hidden
+genes. Hidden genes are recovered by coordinate-ascent MLE (coarse grid scan + fine refinement),
+separately per litter. The native C++ layer accelerates the hot path (`trait_rows`, `child_lik`,
+`loglik`, `scan_parent`) via AVX2 intrinsics with transparent fallback to pure NumPy.
+
+### Analysis Modules
+
+| Module              | Output                                              |
+|---------------------|-----------------------------------------------------|
+| `mi_matrix`         | Mutual information heatmap (parent -> child traits)  |
+| `anomaly`           | Per-child anomaly scores (high-residual outliers)    |
+| `residuals`         | Residual distributions, sibling correlations         |
+| `r_sweep`           | Nudge-range sensitivity (R = 100..200)               |
+| `distribution_tests`| KS and Anderson-Darling goodness-of-fit per litter   |
+| `mixture`           | CLAIM + INDEP mixture-weight exploration             |
+| `profile`           | Profile likelihood for parameter sensitivity         |
+
+### API and Frontend
+
+- **FastAPI** backend serves fitted results, model comparisons, and per-litter details
+- **React + TypeScript** dashboard with Plotly charts (9 pages: models, MI matrix, anomalies,
+  residuals, R-sweep, distribution tests, mixture, gene landscape)
+- **Streamlit** exploratory UI for interactive analysis
+
+### Native Acceleration
+
+C++20 with AVX2 intrinsics targeting Skylake (i7-6700K). Optional CUDA stubs for future GPU support.
+Builds via CMake + pybind11; the extension is optional -- pure Python works without it.
+
+```
+native/
+  src/          model.cpp, avx2.cpp, dispatch.cpp, bindings.cpp
+  include/      model.h, avx2.h, dispatch.h, kernels.h
+  cuda/         trait_rows.cu, scan_parent.cu, loglik.cu (stubs)
+  CMakeLists.txt
+```
+
+## Quick Start
+
+Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
+
+```bash
+# Install dependencies
+make sync
+
+# Run the full pipeline (30-model comparison + validation)
+make run-all
+
+# Or skip profile likelihoods for faster iteration
+make run-all-fast
+
+# Launch the Streamlit dashboard
+make dashboard
+
+# Build and serve the web dashboard
+make build-web
+```
+
+### Native Extension (optional)
+
+Requires CMake 3.18+, a C++20 compiler, and pybind11.
+
+```bash
+make build-native       # Compile and install .pyd/.so
+make bench-native       # Run performance benchmark
+make clean-native       # Remove build artifacts
+```
+
+### Quality Gates
+
+```bash
+make quality            # format-check + lint + test (all must pass)
+make lint               # ruff + mypy (strict) + import-linter + LOC check
+make test               # pytest with 80% branch coverage gate
+```
+
+### Docker
+
+```bash
+make docker-build       # Build API + web containers
+make docker-up          # Start services (API :8000, web :5173)
+make docker-down        # Stop services
+```
+
+## Data
+
+`data/children.csv` -- 692 children from 14 litters, both parents known for each:
+
+```
+litter, parent1_color, parent1_sweet, parent1_size, parent1_length,
+        parent2_color, parent2_sweet, parent2_size, parent2_length,
+        child_color,   child_sweet,   child_size,   child_length
+```
+
+## Documentation
+
+- [Research Methodology](docs/research_methodology.md) -- statistical methods, model specification,
+  validation procedures (v27, 26 adversarial review rounds)
+- [Systems Engineering Spec](docs/systems_engineering.md) -- architecture, requirements (R-01 through
+  R-11), V&V, risk register, native acceleration layer
+
+## Technology Stack
+
+| Layer         | Technology                             |
+|---------------|----------------------------------------|
+| Compute       | Python 3.12, NumPy, SciPy, Pandas     |
+| Acceleration  | C++20, AVX2/FMA3, CUDA (optional)     |
+| API           | FastAPI, Uvicorn, Pydantic             |
+| Web           | React 18, TypeScript, Vite, TailwindCSS, Plotly |
+| Exploratory   | Streamlit                              |
+| Build         | uv, CMake, Make, npm                   |
+| Quality       | Ruff, MyPy (strict), pytest, import-linter |
+| Deploy        | Docker, GitHub Pages                   |
+
+## Authors
+
+**Shikari** (primary) and **Catote** (secondary), with data contributions from
+[ATITD Wiki contributors](https://atitd.wiki/tale11/Guides/Indonesian_Beehives).
+
+## Caveats
+
+- **Held-out scoring** prefers the independent-nudge rival, but this is a known bias: strict models
+  penalize children showing hidden genes unseen in the training fold. Confirmed on synthetic data where
+  held-out scoring picks the wrong model even when the claimed model generated the data.
+- **Length display rule** (g1 vs min/max) is non-identifiable by fit alone; the rival gains ~59 on real
+  data and ~54--66 on synthetic data from the true g1 model.
+- **Color gene split** is non-identifiable; only the sum of the two genes is observable.
+- **Hive1b** shows ~34% cloning behavior (full parent copy + nudge); no other litter exhibits this.
+- This is a fit to observed data. It does not prove this is the game's code.

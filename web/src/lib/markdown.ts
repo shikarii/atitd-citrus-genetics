@@ -53,9 +53,9 @@ function extractMathPlaceholders(md: string): {
     },
   );
 
-  // Inline math: $...$
+  // Inline math: $...$ (allow multi-line for wrapped LaTeX)
   processed = processed.replace(
-    /\$([^\n$]+?)\$/g,
+    /\$((?:[^$\\]|\\.)+?)\$/g,
     (_match: string, math: string): string => {
       const idx = placeholders.length;
       placeholders.push({ type: "inline", math: math.trim() });
