@@ -1624,6 +1624,89 @@ data requires a local pipeline run + export + commit.
 | Empty chart pages | Fixed | Added NoData component with loading states. Pages show "Data Not Available" instead of empty charts when JSON files are missing. |
 | Graph styling inconsistency | Fixed | All 10 chart pages updated with academic styling: named color constants, hover templates, reference line annotations, consistent marker borders, proper axis standoffs, and legend positioning. |
 
+## 17. Automated Result Interpretation
+
+### 17.1 Purpose
+
+Each analysis module produces raw numeric artifacts (CSV/JSON). The interpretation
+pipeline reads these artifacts and generates plain-language summaries of what the
+data actually shows — answering "did we find anomalies?" rather than just "anomaly
+scores detect outliers." These summaries appear on each result page as a "Data Summary"
+box and are synthesized into a Conclusions section on the Landing page.
+
+### 17.2 Architecture
+
+```
+results/current/*.csv
+       |
+       v
+interpret.py  (deterministic Python, no LLM)
+       |
+       v
+interpretations.json  ->  web/public/data/
+       |
+       v
+FindingsSummary.tsx   (per-page "Data Summary" box)
+Landing.tsx           (synthesized Conclusions section)
+```
+
+The interpretation step is **deterministic** — it computes findings from result CSVs
+using threshold-based logic, statistical summaries, and conditional text generation.
+No LLM or API keys are required. This ensures reproducibility and zero cost.
+
+### 17.3 Covered Analyses
+
+| Analysis | Key | Findings Generated |
+|----------|-----|-------------------|
+| Model Comparison | `models` | Best model, CLAIM ranking, impossible-children count, total spread |
+| Anomaly Scores | `anomalies` | Outlier count (2-std threshold), worst child, per-litter averages |
+| MI Matrix | `mi_matrix` | Diagonal vs off-diagonal z-scores, cross-trait coupling assessment |
+| Residuals | `residuals` | Per-trait mean residuals, sibling correlations, trait co-occurrence |
+| R Sweep | `r_sweep` | Optimal R, sensitivity near optimum, total CV range |
+| Distribution Tests | `distribution_tests` | FDR-significant pairs, affected traits/litters, failure rate |
+| Mixture Models | `mixture` | Mean CLAIM weight, INDEP-heavy litters, delta-LL improvement |
+
+### 17.4 Landing Page Conclusions
+
+The Landing page synthesizes all 7 interpretation modules into an opinionated
+Conclusions section with sub-headings: Model Selection, Anomaly Detection, Model
+Self-Sufficiency, Goodness of Fit, Independence Confirmation, Parameter
+Identification, and a final Verdict box. All text is data-driven — if the data
+changes (e.g., new litters added), the conclusions update automatically on the
+next `make export-data` run.
+
+### 17.5 Pipeline Integration
+
+The interpretation runs as part of `make export-data` (called by `make build-web`
+and `make deploy`). No separate Makefile target is needed. The flow is:
+
+1. `make run-all-fast` — runs all analysis modules, writes CSVs to `results/current/`
+2. `make export-data` — converts CSVs to JSON, runs `interpret.py`, writes `interpretations.json`
+3. `make build-web` — builds Vite app with interpretation data included
+
+### 17.6 CI Integration
+
+The deploy workflow (`deploy.yml`) only runs `npm run build` — it does not run the
+Python pipeline or interpretation generation. This is intentional:
+
+- `interpretations.json` is committed to the repo alongside other data JSON files
+- New interpretations require a local `make export-data` + commit
+- No API keys, `.env`, or external services needed in CI
+- If LLM-powered interpretation is desired in the future, add a CI step that runs
+  `claude` CLI with `ANTHROPIC_API_KEY` from GitHub Secrets (not committed to repo)
+
+### 17.7 Files
+
+| File | Purpose |
+|------|---------|
+| `python/citrus_genetics/analysis/interpret.py` | Deterministic interpretation generator |
+| `python/citrus_genetics/cli/export_web_data.py` | Calls `generate_interpretations()` during export |
+| `web/public/data/interpretations.json` | Exported interpretation data |
+| `web/src/components/FindingsSummary.tsx` | Per-page "Data Summary" component |
+| `web/src/lib/data.ts` | `loadInterpretations()` loader + types |
+| `web/src/pages/Landing.tsx` | Synthesized Conclusions section |
+| `web/src/pages/*.tsx` (7 result pages) | Individual `<FindingsSummary>` instances |
+
 ## 18. Native Acceleration Layer
 
 ### 18.1 Purpose
