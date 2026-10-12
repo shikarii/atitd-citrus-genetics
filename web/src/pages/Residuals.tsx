@@ -57,6 +57,17 @@ export function Residuals() {
         Residuals near zero with no systematic pattern confirm model adequacy.
       </p>
 
+      <div className="prose-research text-slate-700 max-w-3xl mb-8 text-sm leading-relaxed space-y-2">
+        <p>
+          Residual analysis tests whether CLAIM's predictions are systematically biased. For each child and
+          trait, we compute the difference between the observed trait value and the model's expected value
+          given the MLE-fitted parent genes. If the model is correct, residuals should be centered at zero,
+          symmetrically distributed, and uncorrelated between siblings within the same litter. Systematic
+          patterns — such as residuals consistently positive for one trait, or correlated between siblings —
+          would indicate missing structure that CLAIM fails to capture.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Observations" value={residuals.length || "..."} />
         <MetricCard label="Mean |Residual|" value={overallMeanAbs.toFixed(1)} />
@@ -68,6 +79,7 @@ export function Residuals() {
         <ChartCard
           title="Residual Distributions by Trait"
           subtitle="Overlaid histograms centered near zero with symmetric tails indicate unbiased predictions"
+          description="Each histogram shows the distribution of residuals for one trait across all 692 children. A well-calibrated model produces histograms centered at zero with roughly symmetric tails. Skewness or heavy tails would indicate the model systematically over- or under-predicts certain trait values."
         >
           <PlotlyChart
             data={traitResiduals.map((tr, i) => ({
@@ -101,6 +113,7 @@ export function Residuals() {
         <ChartCard
           title="Residual Box Plots by Trait"
           subtitle="Median centered at zero indicates unbiased predictions. Outliers shown individually."
+          description="Box plots provide a compact summary of each trait's residual distribution: median, interquartile range, and outliers. The median line should sit on zero (no bias). The box width reflects prediction uncertainty — wider boxes mean more variable predictions. Individual outlier points identify children with unusually large residuals."
         >
           <PlotlyChart
             data={traitResiduals.map((tr, i) => ({
@@ -126,6 +139,7 @@ export function Residuals() {
           <ChartCard
             title="Sibling Residual Correlations"
             subtitle="Pearson r between siblings' residuals per litter. Significant correlations (p < 0.05) suggest unmodeled structure."
+            description="If CLAIM is correct, siblings' residuals should be independent — knowing one sibling's residual should not predict another's. A significant positive correlation would suggest shared environmental effects or gene interactions that CLAIM does not model. Each bar shows the Pearson correlation coefficient between sibling residuals within one litter for one trait."
           >
             <PlotlyChart
               data={TRAITS.map((trait, i) => {

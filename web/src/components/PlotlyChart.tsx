@@ -1,7 +1,8 @@
 import createPlotlyComponent from "react-plotly.js/factory";
 import Plotly from "plotly.js-dist-min";
 import type { Data, Layout as PlotlyLayout, Config } from "plotly.js-dist-min";
-import { PLOTLY_LAYOUT, PLOTLY_CONFIG } from "../lib/colors";
+import { PLOTLY_LAYOUT, PLOTLY_CONFIG, PLOTLY_LAYOUT_DARK } from "../lib/colors";
+import { useTheme } from "../lib/theme";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- plotly.js-dist-min v4 types diverge from @types/react-plotly.js
 const Plot = createPlotlyComponent(Plotly as any);
@@ -14,10 +15,13 @@ interface PlotlyChartProps {
 }
 
 export function PlotlyChart({ data, layout = {}, config = {}, className }: PlotlyChartProps) {
+  const { theme } = useTheme();
+  const base = theme === "dark" ? PLOTLY_LAYOUT_DARK : PLOTLY_LAYOUT;
+
   const mergedLayout: Partial<PlotlyLayout> = {
-    ...PLOTLY_LAYOUT,
+    ...base,
     ...layout,
-    margin: { ...PLOTLY_LAYOUT.margin, ...(layout.margin ?? {}) },
+    margin: { ...base.margin, ...(layout.margin ?? {}) },
   };
 
   const mergedConfig: Partial<Config> = {

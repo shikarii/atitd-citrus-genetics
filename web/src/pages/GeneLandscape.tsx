@@ -86,6 +86,18 @@ export function GeneLandscape() {
         Points along the diagonal indicate both genes have similar values.
       </p>
 
+      <div className="prose-research text-slate-700 max-w-3xl mb-8 text-sm leading-relaxed space-y-2">
+        <p>
+          CLAIM assumes each parent carries two hidden gene values (g1, g2) per trait, and each child
+          inherits one gene from each parent via a coin-flip mechanism. The MLE fitting procedure
+          recovers these hidden gene values from observed offspring data. Visualizing the fitted genes
+          serves as a sanity check: gene values should span the plausible range (0-1000), and litters
+          with shared parents should recover consistent gene estimates. The clone share metric tracks
+          what fraction of fitted gene combinations are degenerate (g1 = g2), which would indicate
+          limited genetic diversity or fitting artifacts.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Litters Fitted" value={data.length || "..."} />
         <MetricCard label="Gene Points" value={genePoints.length || "..."} detail="2 parents x 4 traits x N litters" />
@@ -105,6 +117,7 @@ export function GeneLandscape() {
                 key={trait}
                 title={`Gene Pairs: ${trait.charAt(0).toUpperCase() + trait.slice(1)}`}
                 subtitle="g1 vs g2 per parent. Points on the diagonal indicate homozygous-like genes."
+                description="Each point represents one parent's fitted gene pair for this trait. The dashed diagonal line marks g1 = g2 (homozygous-like). Points far from the diagonal have heterozygous-like genes, producing more offspring diversity. The spatial distribution reveals whether the fitting procedure converges to physically sensible values across litters."
               >
                 <PlotlyChart
                   data={[
@@ -170,6 +183,7 @@ export function GeneLandscape() {
           <ChartCard
             title="3D Gene Landscape: All Traits"
             subtitle="Gene 1 vs Gene 2 vs per-litter log-likelihood across all traits and parents. Color encodes trait."
+            description="This 3D view adds the per-litter log-likelihood as a z-axis, revealing whether certain gene configurations systematically produce better or worse model fits. Points clustered at high z-values across diverse g1/g2 positions indicate the model fits well regardless of the underlying genetics — a sign of robustness."
           >
             <PlotlyChart
               data={TRAITS.map((trait, ti) => {

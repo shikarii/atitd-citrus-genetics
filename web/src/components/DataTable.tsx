@@ -58,28 +58,28 @@ export function DataTable<T extends Record<string, unknown>>({
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
           placeholder={filterPlaceholder}
-          className="px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent w-64"
+          className="px-3 py-1.5 text-sm border border-slate-300 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-neutral-400 focus:border-transparent w-64"
         />
         {csvContent && downloadFilename && (
           <a
             href={`data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`}
             download={downloadFilename}
-            className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+            className="text-sm text-teal-600 hover:text-teal-700 dark:text-neutral-400 dark:hover:text-neutral-200 font-medium"
           >
             Download CSV
           </a>
         )}
       </div>
 
-      <div className="overflow-x-auto border border-slate-200 rounded-lg">
+      <div className="overflow-x-auto border border-slate-200 dark:border-neutral-700 rounded-lg">
         <table className="w-full text-sm">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="bg-slate-50 border-b border-slate-200">
+              <tr key={headerGroup.id} className="bg-slate-50 dark:bg-neutral-800 border-b border-slate-200 dark:border-neutral-700">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-3 py-2 text-left font-semibold text-slate-700 cursor-pointer select-none hover:bg-slate-100"
+                    className="px-3 py-2 text-left font-semibold text-slate-700 dark:text-neutral-300 cursor-pointer select-none hover:bg-slate-100 dark:hover:bg-neutral-700"
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-1">
@@ -93,9 +93,9 @@ export function DataTable<T extends Record<string, unknown>>({
           </thead>
           <tbody>
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <tr key={row.id} className="border-b border-slate-100 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-750 dark:hover:bg-neutral-700/50">
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-2 text-slate-700">
+                  <td key={cell.id} className="px-3 py-2 text-slate-700 dark:text-neutral-300">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -105,7 +105,7 @@ export function DataTable<T extends Record<string, unknown>>({
         </table>
       </div>
 
-      <div className="mt-2 text-xs text-slate-400">
+      <div className="mt-2 text-xs text-slate-400 dark:text-neutral-500">
         {table.getFilteredRowModel().rows.length} of {data.length} rows
       </div>
     </div>

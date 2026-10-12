@@ -6,7 +6,8 @@
     <title>ATITD Citrus Genetics</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
   </head>
-  <body class="bg-slate-50 text-slate-700 antialiased">
+  <body class="bg-slate-50 text-slate-700 antialiased dark:bg-neutral-900 dark:text-neutral-300">
+    <script>if(localStorage.getItem("citrus-theme")==="dark")document.documentElement.classList.add("dark")</script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

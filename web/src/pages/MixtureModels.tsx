@@ -53,6 +53,18 @@ export function MixtureModels() {
         pi near 1 means CLAIM explains nearly all children; pi near 0 means mostly unexplained.
       </p>
 
+      <div className="prose-research text-slate-700 max-w-3xl mb-8 text-sm leading-relaxed space-y-2">
+        <p>
+          Mixture decomposition tests whether CLAIM is self-sufficient or whether some children
+          are better explained by a non-informative alternative. For each litter, we fit a two-component
+          mixture: pi x CLAIM + (1-pi) x INDEP, where INDEP is a uniform (independence) model that
+          treats all trait values as equally likely. If CLAIM is the true generating mechanism, the
+          optimal mixing weight pi should be near 1.0, meaning no children benefit from the INDEP
+          escape component. Low pi values identify litters where a substantial fraction of offspring
+          deviate from CLAIM's predictions.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Mean CLAIM Weight" value={meanPi.toFixed(4)} />
         <MetricCard label="Lowest pi" value={minPi.toFixed(4)} detail="Most anomalous litter" />
@@ -64,6 +76,7 @@ export function MixtureModels() {
         <ChartCard
           title="CLAIM Mixture Weight per Litter"
           subtitle="Sorted by pi (lowest first). Green line: pi = 0.9 (strong fit). Amber line: pi = 0.7 (warning threshold)."
+          description="Each bar shows the optimal CLAIM weight (pi) for one litter. Teal bars above the green line (pi > 0.9) indicate litters where CLAIM explains virtually all offspring. Amber bars between 0.7 and 0.9 warrant investigation. Red bars below 0.7 indicate litters where 30%+ of children are better modeled as random noise, suggesting possible data issues or unmodeled mechanics for those specific crosses."
         >
           <PlotlyChart
             data={[
@@ -102,6 +115,7 @@ export function MixtureModels() {
         <ChartCard
           title="Mixture Log-Likelihood Improvement"
           subtitle="Delta LL = mixture LL - CLAIM-only LL. Positive values indicate improvement from adding INDEP component."
+          description="This chart shows how much the mixture model improves over pure CLAIM for each litter. Small delta-LL values (near zero, teal) mean CLAIM alone is sufficient — adding the INDEP component does not help. Larger values (amber/red) indicate the mixture provides a meaningfully better fit, meaning some children in that litter are poorly explained by CLAIM alone."
         >
           <PlotlyChart
             data={(() => {

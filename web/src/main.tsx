@@ -3,14 +3,17 @@ import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 import { App } from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ThemeProvider } from "./lib/theme";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
-      <HashRouter>
-        <App />
-      </HashRouter>
+      <ThemeProvider>
+        <HashRouter>
+          <App />
+        </HashRouter>
+      </ThemeProvider>
     </ErrorBoundary>
   </StrictMode>,
 );

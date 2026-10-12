@@ -65,6 +65,18 @@ export function MIMatrix() {
         parent-child trait linkage; high off-diagonal MI would suggest unexpected coupling.
       </p>
 
+      <div className="prose-research text-slate-700 max-w-3xl mb-8 text-sm leading-relaxed space-y-2">
+        <p>
+          If CLAIM is correct, each child trait (e.g., sweetness) should depend primarily on the
+          corresponding parent genes and be statistically independent of unrelated parent traits (e.g., color genes).
+          Mutual information (MI) quantifies the statistical dependence between two variables without assuming
+          linearity. We compute MI excess — the observed MI minus the mean MI under random shuffling — to
+          control for finite-sample noise. High diagonal entries confirm that parent genes do predict
+          child traits. High off-diagonal entries would reveal unexpected cross-trait coupling that
+          CLAIM does not model, pointing to a missing mechanism.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Parent-Child Pairs" value={data.length || "..."} />
         <MetricCard label="Max MI Excess" value={maxExcess.toFixed(4)} />
@@ -76,6 +88,7 @@ export function MIMatrix() {
         <ChartCard
           title="MI Excess Heatmap"
           subtitle="Parent variable (rows) vs child trait (columns). Diagonal entries should dominate if traits are inherited independently."
+          description="Each cell shows how much more mutual information exists between a parent variable and child trait than expected by chance. Strong diagonal entries (e.g., A_color to color) confirm that parents' genes predict the corresponding child trait. Weak off-diagonal entries confirm that traits are inherited independently — color genes do not influence sweetness, for example."
         >
           <PlotlyChart
             data={[
@@ -113,6 +126,7 @@ export function MIMatrix() {
         <ChartCard
           title="MI Excess Z-Scores"
           subtitle="Standard deviations above shuffled baseline. Dashed lines at z = +/- 2 (95% threshold)."
+          description="Z-scores normalize MI excess by the standard deviation of the shuffled distribution, making it easy to identify statistically significant dependencies. Diagonal entries (teal) with z > 2 confirm real parent-child linkage. Off-diagonal entries (gray) with z > 2 would flag unexpected cross-trait coupling. Most off-diagonal bars should fall well within the dashed thresholds."
         >
           <PlotlyChart
             data={[

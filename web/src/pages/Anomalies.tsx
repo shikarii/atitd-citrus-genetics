@@ -64,6 +64,17 @@ export function Anomalies() {
         Lower values indicate children that are harder for the model to explain.
       </p>
 
+      <div className="prose-research text-slate-700 max-w-3xl mb-8 text-sm leading-relaxed space-y-2">
+        <p>
+          Even a correct model will assign low probability to some children by chance — but a
+          pattern of extreme outliers would suggest systematic model failure or data errors.
+          We compute each child's individual log-likelihood under CLAIM with MLE-fitted parent genes.
+          Children with very low scores (LL &lt; -5) are flagged as anomalous. If these concentrate
+          in specific litters or show trait-specific patterns, it may indicate an unmodeled game mechanic
+          or data entry error rather than random variation.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Total Children" value={data.length || "..."} />
         <MetricCard label="Mean Log-Lik" value={meanLL.toFixed(2)} />
@@ -75,6 +86,7 @@ export function Anomalies() {
         <ChartCard
           title="Log-Likelihood Distribution by Litter"
           subtitle="Box plots showing per-child log-likelihood spread across litters"
+          description="Each box summarizes the distribution of per-child log-likelihoods within a single litter. Litters with consistently high medians are well-explained by CLAIM. Litters with low medians or many outliers may contain children that violate model assumptions — for example, offspring from a different breeding mechanic or with recording errors."
         >
           <PlotlyChart
             data={litters.map((litter, i) => ({
@@ -101,6 +113,7 @@ export function Anomalies() {
         <ChartCard
           title="Ranked Anomaly Scores"
           subtitle="All children sorted by log-likelihood. Red markers indicate LL < -5 (anomalous)."
+          description="All 692 children are plotted from most anomalous (left) to best-explained (right). The dashed threshold at LL = -5 separates children that fall within expected model variation from those the model struggles to explain. A smooth, gradual curve with few red points indicates the model handles the vast majority of offspring well."
         >
           <PlotlyChart
             data={[

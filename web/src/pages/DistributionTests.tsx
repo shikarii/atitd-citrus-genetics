@@ -70,6 +70,17 @@ export function DistributionTests() {
         against CLAIM-simulated distributions. Benjamini-Hochberg FDR correction applied.
       </p>
 
+      <div className="prose-research text-slate-700 max-w-3xl mb-8 text-sm leading-relaxed space-y-2">
+        <p>
+          Cross-validated log-likelihood tells us which model is <em>best</em>, but not whether it is <em>good enough</em>.
+          Distribution tests formally compare the shape of observed trait values against what CLAIM
+          predicts via simulation. For each of the 56 litter-trait combinations, we simulate 500 children
+          from the fitted model and run two-sample Kolmogorov-Smirnov (KS) and Anderson-Darling (AD) tests.
+          A significant result means the model's predicted distribution detectably differs from the observed
+          one. Benjamini-Hochberg FDR correction controls the false discovery rate across all 56 tests.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Total Tests" value={data.length || "..."} detail="14 litters x 4 traits" />
         <MetricCard label="KS Sig (raw p<0.05)" value={nSigRaw} />
@@ -81,6 +92,7 @@ export function DistributionTests() {
         <ChartCard
           title="KS Statistic Heatmap"
           subtitle="Litter (rows) vs trait (columns). Higher KS statistic indicates larger distributional discrepancy between observed and simulated."
+          description="Each cell shows the KS test statistic for one litter-trait pair. The KS statistic measures the maximum vertical distance between the observed and simulated cumulative distribution functions — larger values mean the distributions differ more. Cool colors (green/teal) indicate good agreement; warm colors (amber/red) flag potential misfit. Systematic patterns across a row (litter) or column (trait) would suggest litter-specific or trait-specific model failures."
         >
           <PlotlyChart
             data={[
@@ -118,6 +130,7 @@ export function DistributionTests() {
         <ChartCard
           title="Volcano Plot: KS Statistic vs Significance"
           subtitle="Each point is one litter-trait test. Diamonds indicate FDR-significant. Dashed line at p = 0.05."
+          description="Volcano plots combine effect size (x-axis: KS statistic) with statistical significance (y-axis: -log10 p-value). Points above the dashed line are nominally significant at p < 0.05. Diamond markers indicate tests that remain significant after Benjamini-Hochberg FDR correction across all 56 tests. Points in the upper-right corner represent the most concerning misfits — both large and statistically significant."
         >
           <PlotlyChart
             data={TRAITS.map((trait, i) => {

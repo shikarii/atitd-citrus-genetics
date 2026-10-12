@@ -101,6 +101,59 @@ export const PLOTLY_LAYOUT: Partial<PlotlyLayout> = {
   },
 };
 
+/** Dark greyscale Plotly layout defaults. */
+export const PLOTLY_LAYOUT_DARK: Partial<PlotlyLayout> = {
+  font: {
+    family: "'Inter', 'Helvetica Neue', Arial, sans-serif",
+    color: "#d4d4d4",
+    size: 12,
+  },
+  paper_bgcolor: "#262626",
+  plot_bgcolor: "#262626",
+  margin: { l: 65, r: 30, t: 50, b: 60 },
+  xaxis: {
+    gridcolor: "#404040",
+    zerolinecolor: "#525252",
+    linecolor: "#525252",
+    linewidth: 1,
+    showline: true,
+    ticks: "outside",
+    tickcolor: "#525252",
+    ticklen: 4,
+    title: { font: { size: 13, color: "#a3a3a3" } },
+    tickfont: { size: 11, color: "#a3a3a3" },
+  },
+  yaxis: {
+    gridcolor: "#404040",
+    zerolinecolor: "#525252",
+    linecolor: "#525252",
+    linewidth: 1,
+    showline: true,
+    ticks: "outside",
+    tickcolor: "#525252",
+    ticklen: 4,
+    title: { font: { size: 13, color: "#a3a3a3" } },
+    tickfont: { size: 11, color: "#a3a3a3" },
+  },
+  colorway: ["#a3a3a3", "#737373", "#d4d4d4", "#525252", "#e5e5e5", "#8a8a8a", "#b0b0b0", "#606060"] as string[],
+  legend: {
+    font: { size: 11, color: "#d4d4d4" },
+    bgcolor: "rgba(38,38,38,0.9)",
+    bordercolor: "#525252",
+    borderwidth: 1,
+  },
+  title: {
+    font: { size: 14, color: "#e5e5e5" },
+    x: 0.02,
+    xanchor: "left",
+  },
+  hoverlabel: {
+    bgcolor: "#1a1a1a",
+    bordercolor: "#525252",
+    font: { size: 12, family: "'Inter', sans-serif", color: "#e5e5e5" },
+  },
+};
+
 export const PLOTLY_CONFIG: Partial<Config> = {
   displayModeBar: true,
   displaylogo: false,

@@ -47,6 +47,17 @@ export function RSweep() {
         cross-validated log-likelihood. The true R is the value maximizing CV LL.
       </p>
 
+      <div className="prose-research text-slate-700 max-w-3xl mb-8 text-sm leading-relaxed space-y-2">
+        <p>
+          CLAIM assumes each child's trait inherits a parent gene plus a uniform mutation drawn
+          from one of 8 offsets in [-R, +R]. The default R = 150 was determined by prior analysis,
+          but how sensitive are our results to this choice? We sweep R across a range of values and
+          re-fit the entire model at each point. If the cross-validated log-likelihood curve has a
+          sharp peak at R = 150, it confirms both the parameter value and the model's sensitivity.
+          A flat curve would mean R is poorly constrained by the data.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="R Values Tested" value={data.length || "..."} />
         <MetricCard label="Best R (CV)" value={bestCV?.R ?? "..."} detail={`cv_ll = ${bestCV?.cv_ll?.toFixed(1) ?? "..."}`} />
@@ -58,6 +69,7 @@ export function RSweep() {
         <ChartCard
           title="Log-Likelihood vs Nudge Range R"
           subtitle="In-sample fit (solid) and leave-one-litter-out cross-validated (dashed) log-likelihood across R values"
+          description="The solid line shows how well the model fits training data at each R value — this always improves with more flexible R. The dashed line shows cross-validated performance, which penalizes overfitting. The peak of the dashed curve identifies the true optimal R. A vertical dotted line marks R = 150, the CLAIM default. The gap between the two curves at large R reveals overfitting."
         >
           <PlotlyChart
             data={[

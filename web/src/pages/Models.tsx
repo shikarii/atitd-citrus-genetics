@@ -56,6 +56,17 @@ export function Models() {
         Leave-one-litter-out cross-validated log-likelihood across 30 inheritance models
       </p>
 
+      <div className="prose-research text-slate-700 max-w-3xl mb-8 text-sm leading-relaxed space-y-2">
+        <p>
+          The central question of this study is: <em>which inheritance model best explains observed citrus offspring?</em>{" "}
+          We evaluate 30 competing models that differ in gene count, inheritance rules, mutation distributions,
+          and trait-coupling assumptions. Each model is scored using leave-one-litter-out cross-validation (LOLOCV),
+          where all 13 litters are used for fitting and the held-out litter is used for evaluation. This prevents
+          overfitting and ensures the winning model generalizes to unseen breeding experiments. A higher CV log-likelihood
+          indicates the model assigns higher probability to offspring it has never seen during training.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Models Tested" value={data.length || "..."} />
         <MetricCard label="Best Model" value={best?.model ?? "..."} detail={`cv_ll = ${best?.cv_ll?.toFixed(1) ?? "..."}`} />
@@ -67,6 +78,7 @@ export function Models() {
         <ChartCard
           title="Cross-Validated Log-Likelihood Leaderboard"
           subtitle="Models sorted by CV LL; higher is better. Red bars indicate models with impossible children."
+          description="Each bar represents one model's total cross-validated log-likelihood across all held-out litters. Models are ranked left-to-right from best to worst. A model that assigns zero probability to any observed child (impossible children) is highlighted in red — these models are fundamentally incompatible with the data regardless of their aggregate score."
         >
           <PlotlyChart
             data={[
@@ -104,6 +116,7 @@ export function Models() {
         <ChartCard
           title="In-Sample Fit vs Cross-Validation Performance"
           subtitle="Dashed line: y = x. Points below the line overfit to training data."
+          description="This scatter plot tests for overfitting. The x-axis is how well each model fits its training data; the y-axis is how well it predicts held-out data. Models near the dashed y=x line generalize well. Models far below the line have high in-sample fit but poor generalization — a hallmark of overfitting due to excessive free parameters. The best model should be both high on the y-axis and close to the diagonal."
         >
           <PlotlyChart
             data={[
