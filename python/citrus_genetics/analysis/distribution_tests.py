@@ -77,31 +77,16 @@ def run_distribution_tests(df: pd.DataFrame, n_sims: int = N_SIMS, seed: int = 9
 
             ks_stat, ks_p = stats.ks_2samp(obs_t, sim_t, alternative="two-sided")
 
-            # Two-sample AD test (scipy >= 1.10); use variant="asymptotic" to silence
-            # the midrank deprecation warning introduced in scipy 1.15
-            try:
-                import warnings as _warnings
-                with _warnings.catch_warnings():
-                    _warnings.simplefilter("ignore", UserWarning)
-                    ad_result = stats.anderson_ksamp([obs_t, sim_t], variant="asymptotic")
-                ad_stat = float(ad_result.statistic)
-                # critical values at 25%, 10%, 5%, 2.5%, 1% (only available in midrank variant)
-                ad_crit = getattr(ad_result, "critical_values", None)
-                if ad_crit is not None and len(ad_crit) > 2:  # noqa: PLR2004
-                    ad_crit_5pct = float(ad_crit[2])
-                    ad_crit_1pct = float(ad_crit[4]) if len(ad_crit) > 4 else float("nan")  # noqa: PLR2004
-                else:
-                    # Fall back to p-value threshold
-                    ad_crit_5pct = float("nan")
-                    ad_crit_1pct = float("nan")
-                ad_p = float(getattr(ad_result, "pvalue", float("nan")))
-                ad_sig_5pct = bool(ad_p < 0.05) if not (ad_p != ad_p) else bool(ad_stat > ad_crit_5pct)
-            except Exception:  # noqa: BLE001
-                ad_stat = float("nan")
-                ad_crit_5pct = float("nan")
-                ad_crit_1pct = float("nan")
-                ad_sig_5pct = False
-                ad_p = float("nan")
+            # Two-sample AD test
+            import warnings as _warnings
+            with _warnings.catch_warnings():
+                _warnings.simplefilter("ignore", UserWarning)
+                ad_result = stats.anderson_ksamp([obs_t, sim_t])
+            ad_stat = float(ad_result.statistic)
+            ad_crit = ad_result.critical_values
+            ad_crit_5pct = float(ad_crit[2])
+            ad_crit_1pct = float(ad_crit[4]) if len(ad_crit) > 4 else float("nan")  # noqa: PLR2004
+            ad_sig_5pct = bool(ad_result.pvalue < 0.05)
 
             rows.append(
                 {
