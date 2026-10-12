@@ -4,7 +4,8 @@ import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
-import { loadAnomalyScores, type AnomalyScore, TRAITS } from "../lib/data";
+import { loadAnomalyScores, loadInterpretations, type AnomalyScore, type Interpretations, TRAITS } from "../lib/data";
+import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, TEAL, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -29,6 +30,7 @@ const columns: ColumnDef<AnomalyScore, unknown>[] = [
 
 export function Anomalies() {
   const [data, setData] = useState<AnomalyScore[]>([]);
+  const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export function Anomalies() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+    loadInterpretations().then(setInterps).catch(() => {});
   }, []);
 
   const sorted = [...data].sort((a, b) => a.log_lik - b.log_lik);
@@ -74,6 +77,8 @@ export function Anomalies() {
           or data entry error rather than random variation.
         </p>
       </div>
+
+      <FindingsSummary interpretation={interps["anomalies"]} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Total Children" value={data.length || "..."} />

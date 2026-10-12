@@ -4,7 +4,8 @@ import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
-import { loadMixtureWeights, type MixtureWeight } from "../lib/data";
+import { loadMixtureWeights, loadInterpretations, type MixtureWeight, type Interpretations } from "../lib/data";
+import { FindingsSummary } from "../components/FindingsSummary";
 import { TEAL, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -20,6 +21,7 @@ const columns: ColumnDef<MixtureWeight, unknown>[] = [
 
 export function MixtureModels() {
   const [data, setData] = useState<MixtureWeight[]>([]);
+  const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +29,7 @@ export function MixtureModels() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+    loadInterpretations().then(setInterps).catch(() => {});
   }, []);
 
   const meanPi = data.length > 0
@@ -64,6 +67,8 @@ export function MixtureModels() {
           deviate from CLAIM's predictions.
         </p>
       </div>
+
+      <FindingsSummary interpretation={interps["mixture"]} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Mean CLAIM Weight" value={meanPi.toFixed(4)} />

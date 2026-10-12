@@ -4,7 +4,8 @@ import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
-import { loadDistributionTests, type DistributionTest, TRAITS, LITTERS } from "../lib/data";
+import { loadDistributionTests, loadInterpretations, type DistributionTest, type Interpretations, TRAITS, LITTERS } from "../lib/data";
+import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, TEAL, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -22,6 +23,7 @@ const columns: ColumnDef<DistributionTest, unknown>[] = [
 
 export function DistributionTests() {
   const [data, setData] = useState<DistributionTest[]>([]);
+  const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export function DistributionTests() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+    loadInterpretations().then(setInterps).catch(() => {});
   }, []);
 
   const nSigFDR = data.filter((d) => d.ks_sig_fdr).length;
@@ -80,6 +83,8 @@ export function DistributionTests() {
           one. Benjamini-Hochberg FDR correction controls the false discovery rate across all 56 tests.
         </p>
       </div>
+
+      <FindingsSummary interpretation={interps["distribution_tests"]} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Total Tests" value={data.length || "..."} detail="14 litters x 4 traits" />

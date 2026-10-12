@@ -136,6 +136,17 @@ export const loadChildren = () => fetchJson<Child[]>("children.json");
 export const loadRunMeta = () => fetchJson<RunMeta>("run_meta.json");
 export const loadMethodology = () => fetchText("methodology.md");
 
+export interface AnalysisInterpretation {
+  key: string;
+  title: string;
+  findings: string[];
+  stats: Record<string, string | number>;
+}
+
+export type Interpretations = Record<string, AnalysisInterpretation>;
+
+export const loadInterpretations = () => fetchJson<Interpretations>("interpretations.json");
+
 export const TRAITS = ["color", "sweet", "size", "length"] as const;
 export type Trait = (typeof TRAITS)[number];
 export const LITTERS = [

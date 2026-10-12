@@ -4,7 +4,8 @@ import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
-import { loadModelComparison, type ModelComparison } from "../lib/data";
+import { loadModelComparison, loadInterpretations, type ModelComparison, type Interpretations } from "../lib/data";
+import { FindingsSummary } from "../components/FindingsSummary";
 import { TEAL, ACCENT, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -25,6 +26,7 @@ const columns: ColumnDef<ModelComparison, unknown>[] = [
 
 export function Models() {
   const [data, setData] = useState<ModelComparison[]>([]);
+  const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export function Models() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+    loadInterpretations().then(setInterps).catch(() => {});
   }, []);
 
   const sorted = [...data].sort((a, b) => b.cv_ll - a.cv_ll);
@@ -66,6 +69,8 @@ export function Models() {
           indicates the model assigns higher probability to offspring it has never seen during training.
         </p>
       </div>
+
+      <FindingsSummary interpretation={interps["models"]} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Models Tested" value={data.length || "..."} />

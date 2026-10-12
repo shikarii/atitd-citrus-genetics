@@ -4,7 +4,8 @@ import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { DataTable } from "../components/DataTable";
 import { NoData } from "../components/NoData";
-import { loadRSweep, type RSweepEntry } from "../lib/data";
+import { loadRSweep, loadInterpretations, type RSweepEntry, type Interpretations } from "../lib/data";
+import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -18,6 +19,7 @@ const columns: ColumnDef<RSweepEntry, unknown>[] = [
 
 export function RSweep() {
   const [data, setData] = useState<RSweepEntry[]>([]);
+  const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export function RSweep() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+    loadInterpretations().then(setInterps).catch(() => {});
   }, []);
 
   const bestCV = data.length > 0 ? data.reduce((a, b) => (b.cv_ll > a.cv_ll ? b : a)) : null;
@@ -57,6 +60,8 @@ export function RSweep() {
           A flat curve would mean R is poorly constrained by the data.
         </p>
       </div>
+
+      <FindingsSummary interpretation={interps["r_sweep"]} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="R Values Tested" value={data.length || "..."} />

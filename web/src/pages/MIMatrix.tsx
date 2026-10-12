@@ -3,13 +3,15 @@ import { MetricCard } from "../components/MetricCard";
 import { ChartCard } from "../components/ChartCard";
 import { PlotlyChart } from "../components/PlotlyChart";
 import { NoData } from "../components/NoData";
-import { loadMIMatrix, type MIEntry, TRAITS } from "../lib/data";
+import { loadMIMatrix, loadInterpretations, type MIEntry, type Interpretations, TRAITS } from "../lib/data";
+import { FindingsSummary } from "../components/FindingsSummary";
 import { TEAL, SLATE, ACCENT } from "../lib/colors";
 
 const PARENT_VARS = TRAITS.flatMap((t) => [`A_${t}`, `B_${t}`]);
 
 export function MIMatrix() {
   const [data, setData] = useState<MIEntry[]>([]);
+  const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,6 +19,7 @@ export function MIMatrix() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+    loadInterpretations().then(setInterps).catch(() => {});
   }, []);
 
   const { heatmapZ, heatmapX, heatmapY, maxExcess, nHighZ } = useMemo(() => {
@@ -76,6 +79,8 @@ export function MIMatrix() {
           CLAIM does not model, pointing to a missing mechanism.
         </p>
       </div>
+
+      <FindingsSummary interpretation={interps["mi_matrix"]} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Parent-Child Pairs" value={data.length || "..."} />

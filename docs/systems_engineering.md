@@ -1582,9 +1582,12 @@ hosting (GitHub Pages does not support server-side rewrites).
 ### 16.2 Data Pipeline
 
 Analysis results flow: `make run-all-fast` (Python pipeline) -> `make export-data`
-(CSV-to-JSON conversion) -> `web/public/data/*.json` (committed to repo) -> Vite bundles
-into static assets. The deploy workflow only builds the Node.js app; it does not run the
-Python pipeline. New analysis data requires a local pipeline run + export + commit.
+(CSV-to-JSON conversion + interpretation generation) -> `web/public/data/*.json`
+(committed to repo) -> Vite bundles into static assets. The export step also generates
+`interpretations.json` — deterministic plain-language summaries of what each analysis
+found (e.g., anomaly counts, significant test failures, optimal parameters). The deploy
+workflow only builds the Node.js app; it does not run the Python pipeline. New analysis
+data requires a local pipeline run + export + commit.
 
 ### 16.3 Key Design Decisions
 
@@ -1592,7 +1595,7 @@ Python pipeline. New analysis data requires a local pipeline run + export + comm
 |----------|-----------|
 | `plotly.js-dist-min` over `plotly.js` | Full plotly.js imports Node.js builtins (buffer, stream, assert) that Vite externalizes as empty browser stubs, causing runtime crashes. The `-dist-min` package is a pre-built browser bundle. |
 | `react-plotly.js/factory` pattern | Required when using `plotly.js-dist-min` — creates the Plot component from the Plotly instance instead of importing the default export. |
-| Lazy page loading (`React.lazy`) | All 12 pages (including Known Weaknesses) load on demand via `Suspense`. Prevents the 4.8 MB plotly chunk from blocking initial shell render. Index chunk: 183 KB (vs 623 KB without lazy loading). |
+| Eager page loading (no code splitting) | All 12 pages are eagerly imported to eliminate dynamic-import chunk-loading errors on GitHub Pages. Plotly.js remains in its own manual chunk. |
 | Static JSON over API | GitHub Pages is free hosting with no server cost. Pre-computed results change rarely (only when analysis pipeline runs). Eliminates FastAPI/Docker/nginx deployment complexity. |
 | HashRouter over BrowserRouter | GitHub Pages returns 404 for non-root paths. HashRouter puts routes after `#` so the server always serves `index.html`. |
 | Light theme code blocks (greyscale) | Matches the white research publication aesthetic. Prism token colors use the teal/slate palette for visual cohesion. |
@@ -1605,13 +1608,14 @@ Python pipeline. New analysis data requires a local pipeline run + export + comm
 | 2x2 gene landscape grid | Gene pair scatter plots arranged in a 2-column grid (`lg:grid-cols-2`) for more compact layout vs full-width. |
 | 3D gene scatter | Interactive `scatter3d` plot showing (g1, g2, log-likelihood) across all traits and parents for exploratory spatial analysis of gene space. |
 | Per-analysis context paragraphs | Each result page includes a descriptive paragraph explaining why the analysis exists, what question it answers, and per-chart descriptions explaining what each visualization tests and how to interpret it. |
+| Automated data interpretation summaries | `export_web_data.py` generates `interpretations.json` with data-driven plain-language findings for each analysis module (7 total). Each result page renders a "Data Summary" box showing what the actual results say — e.g., "No children were flagged as strong anomalies" or "12 of 56 pairs are significant after FDR correction." Summaries are deterministic (computed from result CSVs, no LLM), regenerated on each pipeline run. |
 | Known Weaknesses page | Dedicated page listing 15 methodological, structural, data, and non-identifiability weaknesses with severity tags (high/medium/low), placed between Methodology and Results in the sidebar. |
 
 ### 16.4 Known Issues and Backlog
 
 | Issue | Status | Notes |
 |-------|--------|-------|
-| Missing analysis data files | Fixed | All analysis data files are now exported by `make export-data`: model_comparison, fitted_genes, children, run_meta, MI matrix, anomaly scores, residuals, R sweep, distribution tests, mixture weights, sibling correlations. |
+| Missing analysis data files | Fixed | All analysis data files are now exported by `make export-data`: model_comparison, fitted_genes, children, run_meta, MI matrix, anomaly scores, residuals, R sweep, distribution tests, mixture weights, sibling correlations, interpretations. |
 | Self-hosted runner not configured | Open | Deploy workflow uses `ubuntu-latest`. Self-hosted runner added to `ci-infra/docker-compose.yml` but not yet started. Switch `runs-on` back to `self-hosted` once runner is active. |
 | Quality Gate CI failing | Open | Pre-existing quality gate workflow fails on push. Separate from deploy workflow. |
 | Methodology meta-references | Fixed | Removed "Reordered based on adversarial review" from Section 5 roadmap preamble. |

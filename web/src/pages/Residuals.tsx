@@ -6,15 +6,19 @@ import { NoData } from "../components/NoData";
 import {
   loadResiduals,
   loadSiblingCorrelations,
+  loadInterpretations,
   type ResidualEntry,
   type SiblingCorrelation,
+  type Interpretations,
   TRAITS,
 } from "../lib/data";
+import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, SLATE, ACCENT } from "../lib/colors";
 
 export function Residuals() {
   const [residuals, setResiduals] = useState<ResidualEntry[]>([]);
   const [sibCorr, setSibCorr] = useState<SiblingCorrelation[]>([]);
+  const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,6 +26,7 @@ export function Residuals() {
       loadResiduals().then(setResiduals).catch(() => {}),
       loadSiblingCorrelations().then(setSibCorr).catch(() => {}),
     ]).finally(() => setLoading(false));
+    loadInterpretations().then(setInterps).catch(() => {});
   }, []);
 
   const traitResiduals = TRAITS.map((t) => ({
@@ -67,6 +72,8 @@ export function Residuals() {
           would indicate missing structure that CLAIM fails to capture.
         </p>
       </div>
+
+      <FindingsSummary interpretation={interps["residuals"]} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Observations" value={residuals.length || "..."} />

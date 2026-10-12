@@ -18,6 +18,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from citrus_genetics.analysis.interpret import generate_interpretations
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 RESULTS_DIRS = [
     PROJECT_ROOT / "results" / "current",
@@ -124,6 +126,14 @@ def main() -> None:
         print(f"  research_methodology.md -> methodology.md")
     else:
         print(f"  SKIP methodology.md (not found)")
+
+    # Generate interpretation summaries
+    interps = generate_interpretations()
+    interps_path = OUTPUT_DIR / "interpretations.json"
+    interps_path.write_text(
+        json.dumps(interps, indent=None), encoding="utf-8"
+    )
+    print(f"  interpretations.json ({len(interps)} analyses)")
 
     # Write run metadata
     data_hash = ""

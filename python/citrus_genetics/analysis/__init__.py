@@ -8,4 +8,5 @@ Implements the Tier 0-2 analyses from docs/research_methodology.md:
 - distribution_tests: KS/AD goodness-of-fit tests with FDR correction
 - mixture: CLAIM + INDEP mixture model (EM fitting)
 - profile: profile likelihoods for hidden genes
+- interpret: data-driven plain-language summaries of analysis results
 """
