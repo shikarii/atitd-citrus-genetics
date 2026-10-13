@@ -18,7 +18,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => { setSidebarOpen(true); }}
-              className="md:hidden p-2.5 md:p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-700 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors shrink-0"
+              className="lg:hidden p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-700 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors shrink-0"
               title="Open navigation"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -32,7 +32,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-4">
             <button
               onClick={toggle}
-              className="p-2.5 md:p-1.5 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center rounded-md text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-700 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors"
+              className="p-2.5 lg:p-1.5 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center rounded-md text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-700 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors"
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
               {theme === "dark" ? (

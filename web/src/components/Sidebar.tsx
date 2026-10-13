@@ -54,7 +54,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     <>
       {open && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
@@ -63,7 +63,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           fixed inset-y-0 left-0 z-50 w-60 border-r border-slate-200
           dark:border-neutral-700 bg-white dark:bg-neutral-800
           overflow-y-auto transition-transform duration-200 ease-in-out
-          md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0
+          lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shrink-0
           ${open ? "translate-x-0" : "-translate-x-full"}
         `}
       >
@@ -82,7 +82,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </div>
           <button
             onClick={onClose}
-            className="md:hidden p-2.5 rounded-md text-slate-400 hover:text-slate-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+            className="lg:hidden p-2.5 rounded-md text-slate-400 hover:text-slate-600 dark:text-neutral-500 dark:hover:text-neutral-300"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
