@@ -239,6 +239,35 @@ h1, h2, h3, h4 {
   height: auto;
 }
 
+/* Scroll shadow affordance for horizontally scrollable containers */
+.scroll-shadow-x {
+  position: relative;
+}
+.scroll-shadow-x::before,
+.scroll-shadow-x::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  z-index: 10;
+}
+.scroll-shadow-x::before {
+  left: 0;
+  background: linear-gradient(to right, var(--color-slate-50), transparent);
+}
+.scroll-shadow-x::after {
+  right: 0;
+  background: linear-gradient(to left, var(--color-slate-50), transparent);
+}
+.dark .scroll-shadow-x::before {
+  background: linear-gradient(to right, #171717, transparent);
+}
+.dark .scroll-shadow-x::after {
+  background: linear-gradient(to left, #171717, transparent);
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

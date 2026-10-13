@@ -6,6 +6,7 @@ import { NoData } from "../components/NoData";
 import { loadMIMatrix, loadInterpretations, type MIEntry, type Interpretations, TRAITS } from "../lib/data";
 import { FindingsSummary } from "../components/FindingsSummary";
 import { TEAL, SLATE, ACCENT } from "../lib/colors";
+import { useResponsiveChartHeight } from "../lib/responsive";
 
 const PARENT_VARS = TRAITS.flatMap((t) => [`A_${t}`, `B_${t}`]);
 
@@ -13,6 +14,8 @@ export function MIMatrix() {
   const [data, setData] = useState<MIEntry[]>([]);
   const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
+  const h480 = useResponsiveChartHeight(480);
+  const h420 = useResponsiveChartHeight(420);
 
   useEffect(() => {
     loadMIMatrix()
@@ -121,7 +124,7 @@ export function MIMatrix() {
               },
             ]}
             layout={{
-              height: 480,
+              height: h480,
               xaxis: { title: { text: "Child Trait", standoff: 15 }, tickfont: { size: 12 } },
               yaxis: { title: { text: "Parent Variable", standoff: 15 }, tickfont: { size: 11 } },
             }}
@@ -159,7 +162,7 @@ export function MIMatrix() {
               },
             ]}
             layout={{
-              height: 420,
+              height: h420,
               xaxis: {
                 title: { text: "Parent → Child Pair", standoff: 20 },
                 tickangle: -45,

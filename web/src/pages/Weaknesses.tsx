@@ -22,13 +22,13 @@ const SEVERITY_BADGE = {
 function Weakness({ id, severity, title, children }: WeaknessProps) {
   return (
     <div id={id} className={`border-l-4 rounded-r-lg p-5 mb-4 ${SEVERITY_STYLES[severity]}`}>
-      <div className="flex items-start gap-3 mb-2">
+      <div className="flex flex-col sm:flex-row items-start gap-1 sm:gap-3 mb-2">
         <span className={`text-xs font-semibold px-2 py-0.5 rounded ${SEVERITY_BADGE[severity]}`}>
           {severity.toUpperCase()}
         </span>
-        <h3 className="text-base font-semibold text-slate-800 -mt-0.5">{title}</h3>
+        <h3 className="text-base font-semibold text-slate-800 sm:-mt-0.5">{title}</h3>
       </div>
-      <div className="text-sm text-slate-700 leading-relaxed space-y-2 ml-[52px]">
+      <div className="text-sm text-slate-700 leading-relaxed space-y-2 ml-0 sm:ml-[52px]">
         {children}
       </div>
     </div>

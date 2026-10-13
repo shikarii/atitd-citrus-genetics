@@ -8,6 +8,7 @@ import { loadModelComparison, loadInterpretations, type ModelComparison, type In
 import { FindingsSummary } from "../components/FindingsSummary";
 import { TEAL, ACCENT, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useResponsiveChartHeight } from "../lib/responsive";
 
 const columns: ColumnDef<ModelComparison>[] = [
   { accessorKey: "model", header: "Model" },
@@ -28,6 +29,7 @@ export function Models() {
   const [data, setData] = useState<ModelComparison[]>([]);
   const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
+  const h520 = useResponsiveChartHeight(520);
 
   useEffect(() => {
     loadModelComparison()
@@ -104,7 +106,7 @@ export function Models() {
               },
             ]}
             layout={{
-              height: 520,
+              height: h520,
               xaxis: {
                 title: { text: "Model Specification", standoff: 20 },
                 tickangle: -45,
@@ -153,7 +155,7 @@ export function Models() {
               },
             ]}
             layout={{
-              height: 520,
+              height: h520,
               xaxis: { title: { text: "In-Sample Log-Likelihood (fit_ll)", standoff: 10 } },
               yaxis: { title: { text: "Cross-Validated Log-Likelihood (cv_ll)", standoff: 10 } },
               annotations: data.length > 0 ? sorted.slice(0, 5).map((m) => ({

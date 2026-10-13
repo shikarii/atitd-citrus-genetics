@@ -1099,6 +1099,38 @@ make openapi             # regenerate openapi.json from FastAPI app
 
 Python, web, and native quality gates are independently runnable. The aggregate `make quality` calls all three. CI jobs mirror this split (Section 8.2).
 
+### 7.10 Mobile Responsiveness
+
+The dashboard supports viewports from 320px (small phones) to widescreen desktop. All mobile adaptations are additive via Tailwind breakpoint prefixes; desktop layout is unchanged.
+
+**Breakpoints:**
+
+| Range | Tailwind prefix | Behavior |
+|-------|-----------------|----------|
+| < 640px | _(default)_ | Charts 65% height, single-col stacking, full-width inputs, p-3 main padding |
+| 640-767px | `sm:` | Charts 85% height, 2-col grids, filter inputs at w-64 |
+| 768-1023px | `md:` | Sidebar persistent, desktop chart heights, p-6 main padding |
+| 1024px+ | `lg:` | 4-col stat grids, p-8 main padding |
+| 1280px+ | `xl:` | Methods TOC sidebar visible |
+
+**Touch targets:** All interactive elements (buttons, links, nav items) must be at least 44px in both dimensions on viewports below `md` (768px). Enforced via `min-h-[44px]` and adequate padding.
+
+**Chart height strategy:** Never hardcode pixel heights. Use `useResponsiveChartHeight(desktopPx)` from `web/src/lib/responsive.ts`, which returns viewport-scaled values (mobile 0.65x, tablet 0.85x, desktop 1.0x). Special charts (3D, heatmaps) can override ratios via the options parameter.
+
+**Table strategy:** All data tables use `overflow-x-auto` with a `.scroll-shadow-x` wrapper providing gradient edge affordances on both light and dark themes. Filter inputs are `w-full sm:w-64`. Cell padding reduces on mobile. Column hiding is not used; researchers need all data, and horizontal scroll is acceptable.
+
+**Plotly mobile optimizations:** Applied globally via `PlotlyChart.tsx`:
+- Base font reduced from 12px to 10px
+- Tick fonts reduced from 11px to 9px
+- Margins tightened (65/30/50/60 to 45/15/35/50)
+- X-axis labels auto-rotated to -45 degrees
+- Modebar hidden until hover/tap
+
+**Responsive hooks** (`web/src/lib/responsive.ts`):
+- `useResponsiveChartHeight(desktopHeight, opts?)` -- viewport-scaled chart height
+- `useResponsivePlotlyOverrides()` -- mobile font/margin/tick overrides
+- `useIsMobile(breakpoint?)` -- boolean viewport check
+
 ## 8. Build System
 
 ### 8.1 Makefile Targets

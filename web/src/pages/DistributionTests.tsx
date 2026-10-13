@@ -8,6 +8,7 @@ import { loadDistributionTests, loadInterpretations, type DistributionTest, type
 import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, TEAL, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useResponsiveChartHeight } from "../lib/responsive";
 
 const columns: ColumnDef<DistributionTest>[] = [
   { accessorKey: "litter", header: "Litter" },
@@ -25,6 +26,8 @@ export function DistributionTests() {
   const [data, setData] = useState<DistributionTest[]>([]);
   const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
+  const h520 = useResponsiveChartHeight(520);
+  const h480 = useResponsiveChartHeight(480);
 
   useEffect(() => {
     loadDistributionTests()
@@ -125,7 +128,7 @@ export function DistributionTests() {
               },
             ]}
             layout={{
-              height: 520,
+              height: h520,
               xaxis: { title: { text: "Trait", standoff: 15 }, tickfont: { size: 12 } },
               yaxis: { title: { text: "Litter", standoff: 15 }, tickfont: { size: 11 } },
             }}
@@ -158,7 +161,7 @@ export function DistributionTests() {
               };
             })}
             layout={{
-              height: 480,
+              height: h480,
               xaxis: { title: { text: "KS Statistic", standoff: 10 } },
               yaxis: { title: { text: "-log\u2081\u2080(KS p-value)", standoff: 10 } },
               shapes: [

@@ -8,6 +8,7 @@ import { loadMixtureWeights, loadInterpretations, type MixtureWeight, type Inter
 import { FindingsSummary } from "../components/FindingsSummary";
 import { TEAL, SLATE, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useResponsiveChartHeight } from "../lib/responsive";
 
 const columns: ColumnDef<MixtureWeight>[] = [
   { accessorKey: "litter", header: "Litter" },
@@ -23,6 +24,8 @@ export function MixtureModels() {
   const [data, setData] = useState<MixtureWeight[]>([]);
   const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
+  const h480 = useResponsiveChartHeight(480);
+  const h420 = useResponsiveChartHeight(420);
 
   useEffect(() => {
     loadMixtureWeights()
@@ -102,7 +105,7 @@ export function MixtureModels() {
               },
             ]}
             layout={{
-              height: 480,
+              height: h480,
               xaxis: { title: { text: "Litter", standoff: 10 } },
               yaxis: { title: { text: "\u03C0 (CLAIM Weight)", standoff: 10 }, range: [0, 1.08] },
               shapes: [
@@ -142,7 +145,7 @@ export function MixtureModels() {
               }];
             })()}
             layout={{
-              height: 420,
+              height: h420,
               xaxis: { title: { text: "Litter", standoff: 10 } },
               yaxis: { title: { text: "\u0394 Log-Likelihood (Mixture - CLAIM)", standoff: 10 } },
               shapes: [

@@ -28,11 +28,11 @@ export function Landing() {
 
   return (
     <div>
-      <div className="bg-teal-50 dark:bg-neutral-800 -mx-6 lg:-mx-8 -mt-6 lg:-mt-8 px-6 lg:px-8 py-10 mb-8 border-b border-teal-100 dark:border-neutral-700">
-        <h1 className="text-3xl font-bold text-teal-900 dark:text-neutral-100 mb-3">
+      <div className="bg-teal-50 dark:bg-neutral-800 -mx-3 sm:-mx-4 md:-mx-6 lg:-mx-8 -mt-3 sm:-mt-4 md:-mt-6 lg:-mt-8 px-3 sm:px-4 md:px-6 lg:px-8 py-8 sm:py-10 mb-8 border-b border-teal-100 dark:border-neutral-700">
+        <h1 className="text-2xl sm:text-3xl font-bold text-teal-900 dark:text-neutral-100 mb-3">
           Reverse-Engineering Citrus Tree Breeding Mechanics in A Tale in the Desert
         </h1>
-        <p className="text-lg text-slate-600 dark:text-neutral-400 max-w-3xl leading-relaxed mb-6">
+        <p className="text-base sm:text-lg text-slate-600 dark:text-neutral-400 max-w-3xl leading-relaxed mb-6">
           A systematic statistical investigation of citrus tree genetics in ATITD,
           using maximum likelihood estimation across 30 competing inheritance models
           to identify the true breeding mechanic from 692 observed offspring across 14 litters.
@@ -57,13 +57,13 @@ export function Landing() {
         <div className="flex gap-3">
           <Link
             to="/methods"
-            className="px-4 py-2 bg-teal-600 dark:bg-neutral-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 dark:hover:bg-neutral-500 transition-colors"
+            className="px-4 py-2.5 min-h-[44px] flex items-center bg-teal-600 dark:bg-neutral-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 dark:hover:bg-neutral-500 transition-colors"
           >
             Read Methodology
           </Link>
           <Link
             to="/results/models"
-            className="px-4 py-2 bg-white dark:bg-neutral-700 text-teal-700 dark:text-neutral-200 text-sm font-medium rounded-lg border border-teal-200 dark:border-neutral-600 hover:bg-teal-50 dark:hover:bg-neutral-600 transition-colors"
+            className="px-4 py-2.5 min-h-[44px] flex items-center bg-white dark:bg-neutral-700 text-teal-700 dark:text-neutral-200 text-sm font-medium rounded-lg border border-teal-200 dark:border-neutral-600 hover:bg-teal-50 dark:hover:bg-neutral-600 transition-colors"
           >
             View Results
           </Link>

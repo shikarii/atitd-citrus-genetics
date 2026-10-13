@@ -8,6 +8,7 @@ import { loadAnomalyScores, loadInterpretations, type AnomalyScore, type Interpr
 import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, TEAL, ACCENT } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useResponsiveChartHeight } from "../lib/responsive";
 
 const columns: ColumnDef<AnomalyScore>[] = [
   { accessorKey: "rank", header: "Rank" },
@@ -32,6 +33,8 @@ export function Anomalies() {
   const [data, setData] = useState<AnomalyScore[]>([]);
   const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
+  const h480 = useResponsiveChartHeight(480);
+  const h420 = useResponsiveChartHeight(420);
 
   useEffect(() => {
     loadAnomalyScores()
@@ -107,7 +110,7 @@ export function Anomalies() {
               hovertemplate: "<b>%{x}</b><br>LL: %{y:.3f}<extra></extra>",
             }))}
             layout={{
-              height: 480,
+              height: h480,
               yaxis: { title: { text: "Log-Likelihood", standoff: 10 } },
               xaxis: { tickangle: -30, tickfont: { size: 10 } },
               showlegend: false,
@@ -138,7 +141,7 @@ export function Anomalies() {
               },
             ]}
             layout={{
-              height: 420,
+              height: h420,
               xaxis: { title: { text: "Rank (worst to best)", standoff: 10 } },
               yaxis: { title: { text: "Log-Likelihood", standoff: 10 } },
               shapes: [

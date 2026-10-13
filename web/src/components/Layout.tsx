@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { useTheme } from "../lib/theme";
 
@@ -8,19 +8,31 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { theme, toggle } = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-neutral-900">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => { setSidebarOpen(false); }} />
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-12 border-b border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-between px-6 shrink-0">
-          <span className="text-sm text-slate-500 dark:text-neutral-400">
-            Reverse-Engineering Citrus Breeding Mechanics
-          </span>
+        <header className="h-12 border-b border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-between px-3 sm:px-4 md:px-6 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <button
+              onClick={() => { setSidebarOpen(true); }}
+              className="md:hidden p-2.5 md:p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-700 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors shrink-0"
+              title="Open navigation"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
+            <span className="text-sm text-slate-500 dark:text-neutral-400 truncate sm:whitespace-normal">
+              Reverse-Engineering Citrus Breeding Mechanics
+            </span>
+          </div>
           <div className="flex items-center gap-4">
             <button
               onClick={toggle}
-              className="p-1.5 rounded-md text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-700 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors"
+              className="p-2.5 md:p-1.5 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center rounded-md text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-700 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors"
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
               {theme === "dark" ? (
@@ -43,7 +55,7 @@ export function Layout({ children }: LayoutProps) {
             </a>
           </div>
         </header>
-        <main className="flex-1 p-6 lg:p-8 max-w-[1200px] w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1200px] w-full mx-auto">
           {children}
         </main>
       </div>

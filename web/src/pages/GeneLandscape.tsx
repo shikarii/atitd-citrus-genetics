@@ -7,6 +7,7 @@ import { NoData } from "../components/NoData";
 import { loadFittedGenes, type FittedGenes, TRAITS } from "../lib/data";
 import { CHART_COLORS, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useResponsiveChartHeight } from "../lib/responsive";
 
 interface GenePoint {
   litter: string;
@@ -20,6 +21,8 @@ interface GenePoint {
 export function GeneLandscape() {
   const [data, setData] = useState<FittedGenes[]>([]);
   const [loading, setLoading] = useState(true);
+  const h420 = useResponsiveChartHeight(420);
+  const h600 = useResponsiveChartHeight(600, { mobileRatio: 0.75 });
 
   useEffect(() => {
     loadFittedGenes()
@@ -168,7 +171,7 @@ export function GeneLandscape() {
                     },
                   ]}
                   layout={{
-                    height: 420,
+                    height: h420,
                     xaxis: { title: { text: "Gene 1", standoff: 10 }, range: [0, 1000] },
                     yaxis: { title: { text: "Gene 2", standoff: 10 }, range: [0, 1000] },
                     legend: { x: 0.01, y: 0.99, xanchor: "left", yanchor: "top" },
@@ -206,7 +209,7 @@ export function GeneLandscape() {
                 };
               })}
               layout={{
-                height: 600,
+                height: h600,
                 scene: {
                   xaxis: { title: { text: "Gene 1" } },
                   yaxis: { title: { text: "Gene 2" } },

@@ -8,6 +8,7 @@ import { loadRSweep, loadInterpretations, type RSweepEntry, type Interpretations
 import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, SLATE } from "../lib/colors";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useResponsiveChartHeight } from "../lib/responsive";
 
 const columns: ColumnDef<RSweepEntry>[] = [
   { accessorKey: "R", header: "R" },
@@ -21,6 +22,7 @@ export function RSweep() {
   const [data, setData] = useState<RSweepEntry[]>([]);
   const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
+  const h480 = useResponsiveChartHeight(480);
 
   useEffect(() => {
     loadRSweep()
@@ -100,7 +102,7 @@ export function RSweep() {
               },
             ]}
             layout={{
-              height: 480,
+              height: h480,
               xaxis: { title: { text: "R (Mutation Nudge Range)", standoff: 10 }, dtick: 25 },
               yaxis: { title: { text: "Log-Likelihood", standoff: 10 } },
               shapes: [

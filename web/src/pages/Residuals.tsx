@@ -14,12 +14,14 @@ import {
 } from "../lib/data";
 import { FindingsSummary } from "../components/FindingsSummary";
 import { CHART_COLORS, SLATE, ACCENT } from "../lib/colors";
+import { useResponsiveChartHeight } from "../lib/responsive";
 
 export function Residuals() {
   const [residuals, setResiduals] = useState<ResidualEntry[]>([]);
   const [sibCorr, setSibCorr] = useState<SiblingCorrelation[]>([]);
   const [interps, setInterps] = useState<Interpretations>({});
   const [loading, setLoading] = useState(true);
+  const h420 = useResponsiveChartHeight(420);
 
   useEffect(() => {
     void Promise.all([
@@ -102,7 +104,7 @@ export function Residuals() {
               hovertemplate: "<b>%{fullData.name}</b><br>Residual: %{x}<br>Count: %{y}<extra></extra>",
             }))}
             layout={{
-              height: 420,
+              height: h420,
               barmode: "overlay",
               xaxis: { title: { text: "Residual (Observed - Predicted)", standoff: 10 } },
               yaxis: { title: { text: "Count", standoff: 10 } },
@@ -133,7 +135,7 @@ export function Residuals() {
               hovertemplate: "<b>%{x}</b><br>Residual: %{y:.1f}<extra></extra>",
             }))}
             layout={{
-              height: 420,
+              height: h420,
               yaxis: { title: { text: "Residual", standoff: 10 } },
               shapes: [
                 { type: "line", y0: 0, y1: 0, x0: 0, x1: 1, xref: "paper", line: { dash: "dash", color: SLATE[700], width: 1.5 } },
@@ -164,7 +166,7 @@ export function Residuals() {
                 };
               })}
               layout={{
-                height: 420,
+                height: h420,
                 barmode: "group",
                 bargap: 0.2,
                 xaxis: { title: { text: "Litter", standoff: 15 }, tickangle: -35, tickfont: { size: 10 } },
