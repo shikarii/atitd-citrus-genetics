@@ -226,6 +226,16 @@ atitd-citrus-genetics/
                 run_all.py           # Authoritative orchestrator: allocates run_id, executes compare + simchecks, writes all artifacts, publishes atomically once
                 run_compare.py       # Dev-only: runs comparison pipeline, writes to stdout/temp dir, does NOT update results/current
                 run_simchecks.py     # Dev-only: runs validation pipeline, writes to stdout/temp dir, does NOT update results/current
+            analysis/
+                __init__.py
+                anomaly.py           # Anomaly detection analysis
+                distribution_tests.py # Statistical distribution tests
+                interpret.py         # Deterministic fallback interpreter
+                mixture.py           # Mixture model analysis
+                mi_matrix.py         # Mutual information matrix
+                profile.py           # Profile likelihood analysis
+                residuals.py         # Residual analysis
+                r_sweep.py           # Parameter sensitivity sweep
             scripts/
                 __init__.py
                 check_loc.py         # AST-based LOC enforcement (600 lines/file, 60 lines/function)
@@ -852,6 +862,8 @@ ignore = [
 "python/tests/**/*.py" = ["S101", "D101", "D102", "D103", "D107", "ANN", "PLR2004"]
 "python/citrus_genetics/cli/**/*.py" = ["T201"]     # print is expected in CLI scripts
 "python/citrus_genetics/schemas/**/*.py" = ["D101"]  # Pydantic models are self-documenting
+"python/citrus_genetics/dashboard/**/*.py" = ["T201", "D101", "D102", "D103", "ANN", "INP001"]
+"python/citrus_genetics/core/_native.py" = ["ANN", "ARG001", "ERA001"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 12
@@ -874,6 +886,8 @@ line-ending = "lf"
 - **Tests:** `S101` (assert), `D101` (class docstring), `D102` (public method docstring), `D103` (public function docstring), `D107` (init docstring), `ANN` (type annotations), `PLR2004` (magic values) — test code is inherently self-documenting and assertion-heavy. Note: `D100` (module docstring) and `D104` (package docstring) are globally ignored; `D105` (magic method docstring) and `D106` (nested class docstring) remain active for tests.
 - **CLI scripts:** `T201` (print) — CLI output is the primary user interface for these modules.
 - **Schemas:** `D101` (class docstring) — Pydantic models with typed fields are self-documenting; docstrings would duplicate field definitions.
+- **Dashboard:** `T201` (print), `D101`-`D103` (docstrings), `ANN` (annotations), `INP001` (implicit namespace) — Streamlit pages use print for logging and are standalone scripts.
+- **Native shim:** `ANN` (annotations), `ARG001` (unused args), `ERA001` (commented code) — `_native.py` provides dynamic dispatch stubs whose signatures mirror the native extension.
 
 **Note on deprecated rules:** ANN101 (missing self annotation) and ANN102 (missing cls annotation) were removed from ruff as deprecated. They are not included in the ignore list — ruff silently ignores them if present, but they produce deprecation warnings.
 
@@ -1109,8 +1123,8 @@ The dashboard supports viewports from 320px (small phones) to widescreen desktop
 |-------|-----------------|----------|
 | < 640px | _(default)_ | Charts 65% height, single-col stacking, full-width inputs, p-3 main padding |
 | 640-767px | `sm:` | Charts 85% height, 2-col grids, filter inputs at w-64 |
-| 768-1023px | `md:` | Sidebar persistent, desktop chart heights, p-6 main padding |
-| 1024px+ | `lg:` | 4-col stat grids, p-8 main padding |
+| 768-1023px | `md:` | Desktop chart heights, p-6 main padding |
+| 1024px+ | `lg:` | Sidebar persistent, 4-col stat grids, p-8 main padding |
 | 1280px+ | `xl:` | Methods TOC sidebar visible |
 
 **Touch targets:** All interactive elements (buttons, links, nav items) must be at least 44px in both dimensions on viewports below `md` (768px). Enforced via `min-h-[44px]` and adequate padding.
